@@ -383,3 +383,30 @@ CREATE POLICY "victims: leer (familiar aprobado)"
         AND ar.expires_at > NOW()
     )
   );
+
+-- ============================================================
+-- MIGRACIÓN: verificación obligatoria en reportes de menores
+-- Ante el aumento de desapariciones de menores y de tráfico, un reporte
+-- anónimo sin ningún rastro es un riesgo: cualquiera podría usarlo para
+-- intentar ubicar a un menor sin dejar forma de verificar quién pregunta.
+-- Por eso el reporte ahora exige sesión iniciada + documento que pruebe
+-- parentesco (reutiliza el bucket privado access-docs, ya solo lo lee
+-- admin). Nada de esto habilita búsqueda ni matching automático: sigue
+-- siendo 100% revisión manual de un admin.
+-- ============================================================
+
+ALTER TABLE public.minor_inquiries
+  ADD COLUMN IF NOT EXISTS reporter_user_id UUID REFERENCES public.profiles(id);
+
+ALTER TABLE public.minor_inquiries
+  ADD COLUMN IF NOT EXISTS id_document_url TEXT;
+
+DROP POLICY IF EXISTS "minor_inquiries: insertar" ON public.minor_inquiries;
+CREATE POLICY "minor_inquiries: insertar"
+  ON public.minor_inquiries FOR INSERT
+  WITH CHECK (
+    auth.uid() IS NOT NULL
+    AND reporter_user_id = auth.uid()
+    AND id_document_url IS NOT NULL
+    AND length(id_document_url) > 0
+  );

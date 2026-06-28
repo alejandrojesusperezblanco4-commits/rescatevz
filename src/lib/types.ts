@@ -78,11 +78,14 @@ export interface PublicSearchMatch {
 
 export interface MinorInquiry {
   id: string
+  reporter_user_id: string
   reporter_name: string
   reporter_contact: string
   description: string
+  id_document_url: string
   status: 'pending' | 'reviewed'
   created_at: string
+  reporter?: Pick<Profile, 'id' | 'email' | 'full_name'>
 }
 
 export const STATUS_LABELS: Record<VictimStatus, string> = {

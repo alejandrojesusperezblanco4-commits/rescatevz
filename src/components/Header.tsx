@@ -28,6 +28,7 @@ export default function Header({ profile }: HeaderProps) {
     { href: '/mapa-publico', label: 'Mapa', roles: ['admin', 'rescuer', 'medical', 'family'] },
     { href: '/mis-solicitudes', label: 'Mis solicitudes', roles: ['family'] },
     { href: '/solicitudes', label: 'Solicitudes', roles: ['admin'] },
+    { href: '/menores', label: 'Reportes de menores', roles: ['admin'] },
   ] as const
 
   const visibleNav = nav.filter(n => (n.roles as readonly string[]).includes(profile.role))
