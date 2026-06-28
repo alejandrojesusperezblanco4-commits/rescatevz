@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
-import type { Location } from '@/lib/types'
+import type { Location, VictimStatus, VictimStatusCounts } from '@/lib/types'
 import MapaClientWrapper from '@/components/MapaClientWrapper'
 
 export default async function MapaPublicoPage() {
@@ -8,32 +8,38 @@ export default async function MapaPublicoPage() {
 
   const { data: locations } = await supabase
     .from('locations')
-    .select(`
-      id, name, type, lat, lng, address, phone, capacity, current_occupancy, is_active
-    `)
+    .select('id, name, type, lat, lng, address, phone, capacity, current_occupancy, is_active')
     .eq('is_active', true)
     .order('type')
 
-  // Count victims per location
-  const { data: victimCounts } = await supabase
+  const { data: victimRows } = await supabase
     .from('victims')
-    .select('current_location_id')
+    .select('current_location_id, status')
     .not('current_location_id', 'is', null)
 
-  const countMap: Record<string, number> = {}
-  ;(victimCounts || []).forEach(v => {
-    if (v.current_location_id) {
-      countMap[v.current_location_id] = (countMap[v.current_location_id] || 0) + 1
+  const EMPTY_COUNTS = (): VictimStatusCounts => ({ alive: 0, critical: 0, deceased: 0, missing: 0, unknown: 0 })
+
+  const countMap: Record<string, VictimStatusCounts & { total: number }> = {}
+  ;(victimRows || []).forEach(v => {
+    if (!v.current_location_id) return
+    if (!countMap[v.current_location_id]) countMap[v.current_location_id] = { ...EMPTY_COUNTS(), total: 0 }
+    const s = v.status as VictimStatus
+    countMap[v.current_location_id][s]++
+    countMap[v.current_location_id].total++
+  })
+
+  const locationsWithCount: Location[] = (locations || []).map(loc => {
+    const c = countMap[loc.id]
+    return {
+      ...loc,
+      victim_count:  c?.total || 0,
+      victim_counts: c ? { alive: c.alive, critical: c.critical, deceased: c.deceased, missing: c.missing, unknown: c.unknown } : EMPTY_COUNTS(),
     }
   })
 
-  const locationsWithCount: Location[] = (locations || []).map(loc => ({
-    ...loc,
-    victim_count: countMap[loc.id] || 0,
-  }))
-
-  const hospitals = locationsWithCount.filter(l => l.type === 'hospital')
-  const shelters = locationsWithCount.filter(l => l.type === 'shelter')
+  const hospitals  = locationsWithCount.filter(l => l.type === 'hospital')
+  const shelters   = locationsWithCount.filter(l => l.type === 'shelter')
+  const collapsed  = locationsWithCount.filter(l => l.type === 'collapsed_building')
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
@@ -53,7 +59,7 @@ export default async function MapaPublicoPage() {
       </header>
 
       <div className="flex-1 flex flex-col lg:flex-row">
-        {/* Map */}
+        {/* Mapa */}
         <div className="flex-1 h-[60vh] lg:h-auto p-4">
           <MapaClientWrapper locations={locationsWithCount} />
         </div>
@@ -61,10 +67,37 @@ export default async function MapaPublicoPage() {
         {/* Sidebar */}
         <div className="w-full lg:w-80 bg-white border-t lg:border-t-0 lg:border-l border-gray-200 overflow-y-auto">
           <div className="p-4">
-            <div className="flex gap-4 mb-4 text-sm">
-              <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-red-600 inline-block"></span> Hospitales ({hospitals.length})</span>
-              <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-blue-600 inline-block"></span> Refugios ({shelters.length})</span>
+            {/* Leyenda */}
+            <div className="flex flex-wrap gap-3 mb-4 text-xs">
+              <span className="flex items-center gap-1.5">
+                <span className="w-3 h-3 rounded-full bg-red-600 inline-block" />
+                Hospitales ({hospitals.length})
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="w-3 h-3 rounded-full bg-blue-600 inline-block" />
+                Refugios ({shelters.length})
+              </span>
+              {collapsed.length > 0 && (
+                <span className="flex items-center gap-1.5">
+                  <span className="w-3 h-3 rounded bg-amber-500 inline-block" />
+                  Derrumbes ({collapsed.length})
+                </span>
+              )}
             </div>
+
+            {/* Edificios derrumbados — primero por urgencia */}
+            {collapsed.length > 0 && (
+              <div className="mb-6">
+                <h2 className="text-xs font-semibold text-amber-700 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                  🏚️ Edificios derrumbados
+                </h2>
+                <div className="space-y-2">
+                  {collapsed.map(loc => (
+                    <CollapsedCard key={loc.id} location={loc} />
+                  ))}
+                </div>
+              </div>
+            )}
 
             {hospitals.length > 0 && (
               <div className="mb-6">
@@ -100,6 +133,9 @@ export default async function MapaPublicoPage() {
 
 function LocationCard({ location }: { location: Location }) {
   const isHospital = location.type === 'hospital'
+  const counts = location.victim_counts
+  const total  = counts ? counts.alive + counts.critical + counts.deceased + counts.missing + counts.unknown : 0
+
   return (
     <div className="border border-gray-100 rounded-lg p-3 hover:border-gray-300 transition-colors">
       <div className="flex items-start gap-2">
@@ -109,25 +145,72 @@ function LocationCard({ location }: { location: Location }) {
           {location.address && (
             <p className="text-xs text-gray-400 mt-0.5 truncate">{location.address}</p>
           )}
-          <div className="flex items-center gap-3 mt-1.5">
+          <div className="flex items-center gap-3 mt-1.5 flex-wrap">
             {location.capacity && (
               <span className="text-xs text-gray-500">
                 Ocupación: {location.current_occupancy}/{location.capacity}
               </span>
             )}
-            {location.victim_count !== undefined && location.victim_count > 0 && (
+            {total > 0 && (
               <span className="text-xs font-medium text-red-600">
-                {location.victim_count} registrado{location.victim_count > 1 ? 's' : ''}
+                {total} registrado{total > 1 ? 's' : ''}
               </span>
             )}
           </div>
+          {counts && total > 0 && (
+            <StatusPills counts={counts} />
+          )}
           {location.phone && (
-            <a href={`tel:${location.phone}`} className="text-xs text-blue-600 hover:underline mt-0.5 block">
+            <a href={`tel:${location.phone}`} className="text-xs text-blue-600 hover:underline mt-1 block">
               📞 {location.phone}
             </a>
           )}
         </div>
       </div>
+    </div>
+  )
+}
+
+function CollapsedCard({ location }: { location: Location }) {
+  const counts = location.victim_counts
+  const total  = counts ? counts.alive + counts.critical + counts.deceased + counts.missing + counts.unknown : 0
+
+  return (
+    <div className="border-2 border-amber-200 bg-amber-50 rounded-lg p-3 hover:border-amber-400 transition-colors">
+      <div className="flex items-start gap-2">
+        <span className="text-base mt-0.5">🏚️</span>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-amber-900 leading-tight">{location.name}</p>
+          {location.address && (
+            <p className="text-xs text-amber-700 mt-0.5 truncate">{location.address}</p>
+          )}
+          {counts && total > 0
+            ? <StatusPills counts={counts} />
+            : <p className="text-xs text-amber-600 mt-1.5">Sin personas registradas aún</p>
+          }
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function StatusPills({ counts }: { counts: VictimStatusCounts }) {
+  const items: { label: string; value: number; cls: string }[] = [
+    { label: 'Con vida',     value: counts.alive,    cls: 'bg-green-100 text-green-800' },
+    { label: 'Crítico',      value: counts.critical, cls: 'bg-orange-100 text-orange-800' },
+    { label: 'Fallecidos',   value: counts.deceased, cls: 'bg-gray-200 text-gray-700' },
+    { label: 'Desaparecidos',value: counts.missing,  cls: 'bg-purple-100 text-purple-800' },
+    { label: 'Sin ID',       value: counts.unknown,  cls: 'bg-yellow-100 text-yellow-800' },
+  ].filter(i => i.value > 0)
+
+  if (items.length === 0) return null
+  return (
+    <div className="flex flex-wrap gap-1 mt-1.5">
+      {items.map(i => (
+        <span key={i.label} className={`text-xs font-medium px-1.5 py-0.5 rounded ${i.cls}`}>
+          {i.value} {i.label}
+        </span>
+      ))}
     </div>
   )
 }

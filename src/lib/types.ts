@@ -1,8 +1,16 @@
 export type UserRole = 'admin' | 'rescuer' | 'medical' | 'family'
 
-export type VictimStatus = 'alive' | 'critical' | 'deceased' | 'unknown'
+export type VictimStatus = 'alive' | 'critical' | 'deceased' | 'missing' | 'unknown'
 
-export type LocationType = 'hospital' | 'shelter' | 'rescue_zone'
+export type LocationType = 'hospital' | 'shelter' | 'rescue_zone' | 'collapsed_building'
+
+export interface VictimStatusCounts {
+  alive: number
+  critical: number
+  deceased: number
+  missing: number
+  unknown: number
+}
 
 export type AccessRequestStatus = 'pending' | 'approved' | 'rejected'
 
@@ -30,6 +38,7 @@ export interface Location {
   current_occupancy: number
   is_active: boolean
   victim_count?: number
+  victim_counts?: VictimStatusCounts
 }
 
 export interface Victim {
@@ -79,6 +88,7 @@ export const STATUS_LABELS: Record<VictimStatus, string> = {
   alive: 'Con vida',
   critical: 'Estado crítico',
   deceased: 'Fallecido',
+  missing: 'Desaparecido',
   unknown: 'Desconocido',
 }
 
@@ -86,7 +96,15 @@ export const STATUS_COLORS: Record<VictimStatus, string> = {
   alive: 'bg-green-100 text-green-800',
   critical: 'bg-orange-100 text-orange-800',
   deceased: 'bg-gray-100 text-gray-800',
+  missing: 'bg-purple-100 text-purple-800',
   unknown: 'bg-yellow-100 text-yellow-800',
+}
+
+export const LOCATION_TYPE_LABELS: Record<LocationType, string> = {
+  hospital: 'Hospital',
+  shelter: 'Refugio',
+  rescue_zone: 'Zona de rescate',
+  collapsed_building: 'Edificio derrumbado',
 }
 
 export const ROLE_LABELS: Record<UserRole, string> = {

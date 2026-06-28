@@ -28,7 +28,7 @@ CREATE TABLE public.profiles (
 CREATE TABLE public.locations (
   id                UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
   name              TEXT NOT NULL,
-  type              TEXT NOT NULL CHECK (type IN ('hospital', 'shelter', 'rescue_zone')),
+  type              TEXT NOT NULL CHECK (type IN ('hospital', 'shelter', 'rescue_zone', 'collapsed_building')),
   lat               DECIMAL(10, 7) NOT NULL,
   lng               DECIMAL(10, 7) NOT NULL,
   address           TEXT,
@@ -48,7 +48,7 @@ CREATE TABLE public.victims (
   estimated_age        INTEGER,
   is_minor             BOOLEAN NOT NULL DEFAULT FALSE,
   status               TEXT NOT NULL DEFAULT 'unknown'
-                         CHECK (status IN ('alive', 'critical', 'deceased', 'unknown')),
+                         CHECK (status IN ('alive', 'critical', 'deceased', 'missing', 'unknown')),
   found_location       TEXT NOT NULL,
   current_location_id  UUID REFERENCES public.locations(id),
   photo_urls           TEXT[] NOT NULL DEFAULT '{}',
@@ -145,6 +145,13 @@ CREATE POLICY "locations: leer activas"
 CREATE POLICY "locations: escribir (admin)"
   ON public.locations FOR ALL
   USING (public.is_admin());
+
+CREATE POLICY "locations: rescatista registra derrumbe"
+  ON public.locations FOR INSERT
+  WITH CHECK (
+    public.is_verified_staff()
+    AND type = 'collapsed_building'
+  );
 
 -- VICTIMS: staff verificado puede crear; staff puede leer adultos; medical/admin pueden ver menores
 CREATE POLICY "victims: crear (staff verificado)"
@@ -291,3 +298,25 @@ ON CONFLICT DO NOTHING;
 -- Después de registrarte, ejecuta esto con tu UUID:
 -- UPDATE public.profiles SET role = 'admin', is_verified = TRUE WHERE id = 'TU-UUID-AQUI';
 -- ============================================================
+
+-- ============================================================
+-- MIGRACIÓN: edificios derrumbados y estado desaparecido
+-- Si ya tienes la base de datos creada, ejecuta solo este bloque
+-- ============================================================
+
+ALTER TABLE public.locations
+  DROP CONSTRAINT IF EXISTS locations_type_check,
+  ADD CONSTRAINT locations_type_check
+    CHECK (type IN ('hospital', 'shelter', 'rescue_zone', 'collapsed_building'));
+
+ALTER TABLE public.victims
+  DROP CONSTRAINT IF EXISTS victims_status_check,
+  ADD CONSTRAINT victims_status_check
+    CHECK (status IN ('alive', 'critical', 'deceased', 'missing', 'unknown'));
+
+CREATE POLICY IF NOT EXISTS "locations: rescatista registra derrumbe"
+  ON public.locations FOR INSERT
+  WITH CHECK (
+    public.is_verified_staff()
+    AND type = 'collapsed_building'
+  );
