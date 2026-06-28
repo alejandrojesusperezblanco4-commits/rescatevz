@@ -1,12 +1,16 @@
 import Link from 'next/link'
+import AlertasSismos from '@/components/AlertasSismos'
 
 export default function LandingPage() {
   return (
     <div className="min-h-screen flex flex-col">
-      {/* Emergency banner */}
+      {/* Banner de emergencia fijo */}
       <div className="bg-red-600 text-white text-center py-2 text-sm font-medium px-4">
         Emergencia activa — Terremotos Venezuela 24 de junio 2026
       </div>
+
+      {/* Alertas sísmicas en tiempo real (USGS) */}
+      <AlertasSismos />
 
       {/* Header */}
       <header className="bg-gray-900 text-white px-6 py-4 flex items-center justify-between">
