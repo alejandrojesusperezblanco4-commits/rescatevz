@@ -44,7 +44,9 @@ CREATE TABLE public.victims (
   id                   UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
   created_by           UUID REFERENCES public.profiles(id) NOT NULL,
   name                 TEXT,                 -- puede ser NULL si se desconoce
-  cedula               TEXT,                 -- cédula venezolana (V/E + número); NULL si no se conoce
+  cedula               TEXT,                 -- cédula venezolana (V/E + número); NULL si no se conoce o es menor sin cédula
+  partida_nacimiento   TEXT,                 -- número de partida de nacimiento; usado como dedup para menores sin cédula
+  tutor_cedula         TEXT,                 -- cédula del padre/madre/tutor; referencia auxiliar para menores
   physical_description TEXT NOT NULL,
   estimated_age        INTEGER,
   is_minor             BOOLEAN NOT NULL DEFAULT FALSE,
@@ -59,7 +61,9 @@ CREATE TABLE public.victims (
 );
 
 -- Impide cédulas duplicadas; permite múltiples registros sin cédula (NULL)
-CREATE UNIQUE INDEX victims_cedula_unique ON public.victims (cedula) WHERE cedula IS NOT NULL;
+CREATE UNIQUE INDEX victims_cedula_unique           ON public.victims (cedula)             WHERE cedula IS NOT NULL;
+-- Impide partidas de nacimiento duplicadas para menores sin cédula
+CREATE UNIQUE INDEX victims_partida_unique          ON public.victims (partida_nacimiento) WHERE partida_nacimiento IS NOT NULL;
 
 -- Solicitudes de familias para ver perfil completo de una víctima
 CREATE TABLE public.access_requests (
@@ -325,6 +329,9 @@ CREATE POLICY IF NOT EXISTS "locations: rescatista registra derrumbe"
     AND type = 'collapsed_building'
   );
 
--- Control de cédulas duplicadas
-ALTER TABLE public.victims ADD COLUMN IF NOT EXISTS cedula TEXT;
-CREATE UNIQUE INDEX IF NOT EXISTS victims_cedula_unique ON public.victims (cedula) WHERE cedula IS NOT NULL;
+-- Control de cédulas y partidas de nacimiento duplicadas
+ALTER TABLE public.victims ADD COLUMN IF NOT EXISTS cedula             TEXT;
+ALTER TABLE public.victims ADD COLUMN IF NOT EXISTS partida_nacimiento TEXT;
+ALTER TABLE public.victims ADD COLUMN IF NOT EXISTS tutor_cedula       TEXT;
+CREATE UNIQUE INDEX IF NOT EXISTS victims_cedula_unique  ON public.victims (cedula)             WHERE cedula IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS victims_partida_unique ON public.victims (partida_nacimiento) WHERE partida_nacimiento IS NOT NULL;

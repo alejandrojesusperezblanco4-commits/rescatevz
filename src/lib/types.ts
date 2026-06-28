@@ -46,6 +46,8 @@ export interface Victim {
   created_by: string
   name: string | null
   cedula: string | null
+  partida_nacimiento: string | null
+  tutor_cedula: string | null
   physical_description: string
   estimated_age: number | null
   is_minor: boolean
