@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import type { IdDocumentType, PublicSearchMatch } from '@/lib/types'
+import type { PublicSearchMatch } from '@/lib/types'
 import { STATUS_LABELS, STATUS_COLORS } from '@/lib/types'
 
 interface SolicitudData {
@@ -21,7 +21,6 @@ export default function BusquedaFamiliar() {
   // Solicitud de acceso
   const [solicitud, setSolicitud] = useState<SolicitudData | null>(null)
   const [relationship, setRelationship] = useState('')
-  const [documentType, setDocumentType] = useState<IdDocumentType>('cedula')
   const [idFile, setIdFile] = useState<File | null>(null)
   const [solicitudLoading, setSolicitudLoading] = useState(false)
   const [solicitudSuccess, setSolicitudSuccess] = useState(false)
@@ -87,11 +86,13 @@ export default function BusquedaFamiliar() {
       return
     }
 
+    // Esta búsqueda pública nunca devuelve menores (is_minor = false en el
+    // RPC), así que la persona solicitada siempre debería tener cédula.
     const { error: insertError } = await supabase.from('access_requests').insert({
       family_user_id: user.id,
       victim_id: solicitud.victimId,
       id_document_url: path,
-      id_document_type: documentType,
+      id_document_type: 'cedula',
       relationship_description: relationship,
     })
 
@@ -272,35 +273,8 @@ export default function BusquedaFamiliar() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Tipo de documento</label>
-                    <div className="grid grid-cols-2 gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setDocumentType('cedula')}
-                        className={`py-2 px-3 text-xs font-medium rounded-lg border transition-colors ${
-                          documentType === 'cedula' ? 'bg-red-600 text-white border-red-600' : 'bg-white text-gray-700 border-gray-300 hover:border-red-300'
-                        }`}
-                      >
-                        Cédula de identidad
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setDocumentType('acta_nacimiento')}
-                        className={`py-2 px-3 text-xs font-medium rounded-lg border transition-colors ${
-                          documentType === 'acta_nacimiento' ? 'bg-red-600 text-white border-red-600' : 'bg-white text-gray-700 border-gray-300 hover:border-red-300'
-                        }`}
-                      >
-                        Acta de nacimiento
-                      </button>
-                    </div>
-                    <p className="text-xs text-gray-500 mt-2">
-                      Usa acta de nacimiento si solicitas en nombre de un menor de edad sin cédula propia (prueba el parentesco).
-                    </p>
-                  </div>
-
-                  <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Foto del documento <span className="text-red-500">*</span>
+                      Foto de tu cédula de identidad <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="file"
