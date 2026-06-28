@@ -33,10 +33,10 @@ export default function LandingPage() {
       {/* Hero */}
       <main className="flex-1 flex flex-col items-center justify-center px-4 py-16 text-center">
         <div className="max-w-2xl w-full">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">
+          <h1 className="text-2xl sm:text-4xl font-bold text-gray-900 mb-4">
             Conectamos familias con sus seres queridos
           </h1>
-          <p className="text-xl text-gray-600 mb-12">
+          <p className="text-base sm:text-xl text-gray-600 mb-12">
             Plataforma segura para registrar víctimas rescatadas, localizar hospitales y refugios, y reunir familias.
           </p>
 

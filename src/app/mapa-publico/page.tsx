@@ -48,14 +48,16 @@ export default async function MapaPublicoPage() {
         Emergencia activa — Terremotos Venezuela 24 de junio 2026
       </div>
 
-      <header className="bg-gray-900 text-white px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-red-600 rounded-full flex items-center justify-center font-bold text-sm">RV</div>
-          <span className="font-bold text-lg">RescateVZ — Mapa de emergencia</span>
+      <header className="bg-gray-900 text-white px-4 sm:px-6 py-4 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          <div className="w-8 h-8 bg-red-600 rounded-full flex items-center justify-center font-bold text-sm flex-shrink-0">RV</div>
+          <span className="font-bold text-base sm:text-lg truncate">
+            RescateVZ<span className="hidden sm:inline"> — Mapa de emergencia</span>
+          </span>
         </div>
-        <div className="flex gap-3">
-          <Link href="/buscar" className="text-sm text-gray-300 hover:text-white transition-colors">Buscar familiar</Link>
-          <Link href="/" className="text-sm text-gray-400 hover:text-white transition-colors">← Inicio</Link>
+        <div className="flex gap-2 sm:gap-3 flex-shrink-0">
+          <Link href="/buscar" className="text-xs sm:text-sm text-gray-300 hover:text-white transition-colors whitespace-nowrap">Buscar familiar</Link>
+          <Link href="/" className="text-xs sm:text-sm text-gray-400 hover:text-white transition-colors whitespace-nowrap">← Inicio</Link>
         </div>
       </header>
 

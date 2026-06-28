@@ -69,7 +69,7 @@ function RegistroForm() {
             <h1 className="text-2xl font-bold text-gray-900">Crear cuenta</h1>
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 sm:p-8">
             <form onSubmit={handleRegister} className="space-y-4">
 
               {/* Selector de rol */}

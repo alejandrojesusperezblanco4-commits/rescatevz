@@ -22,14 +22,16 @@ export default async function ComoAyudarPage() {
         Emergencia activa — Terremotos Venezuela 24 de junio 2026
       </div>
 
-      <header className="bg-gray-900 text-white px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-red-600 rounded-full flex items-center justify-center font-bold text-sm">RV</div>
-          <span className="font-bold text-lg">RescateVZ — Cómo ayudar</span>
+      <header className="bg-gray-900 text-white px-4 sm:px-6 py-4 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          <div className="w-8 h-8 bg-red-600 rounded-full flex items-center justify-center font-bold text-sm flex-shrink-0">RV</div>
+          <span className="font-bold text-base sm:text-lg truncate">
+            RescateVZ<span className="hidden sm:inline"> — Cómo ayudar</span>
+          </span>
         </div>
-        <div className="flex gap-3">
-          <Link href="/mapa-publico" className="text-sm text-gray-300 hover:text-white transition-colors">Ver mapa</Link>
-          <Link href="/" className="text-sm text-gray-400 hover:text-white transition-colors">← Inicio</Link>
+        <div className="flex gap-2 sm:gap-3 flex-shrink-0">
+          <Link href="/mapa-publico" className="text-xs sm:text-sm text-gray-300 hover:text-white transition-colors whitespace-nowrap">Ver mapa</Link>
+          <Link href="/" className="text-xs sm:text-sm text-gray-400 hover:text-white transition-colors whitespace-nowrap">← Inicio</Link>
         </div>
       </header>
 
@@ -124,7 +126,7 @@ function CenterCard({ center }: { center: Location }) {
 
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-5 hover:border-green-300 transition-colors">
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
             <span className="text-xl">📦</span>
@@ -155,19 +157,19 @@ function CenterCard({ center }: { center: Location }) {
         </div>
 
         {/* Acciones */}
-        <div className="flex flex-col gap-2 flex-shrink-0">
+        <div className="flex sm:flex-col gap-2 flex-shrink-0">
           <a
             href={mapsUrl}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-800 border border-blue-200 hover:border-blue-400 rounded-lg px-3 py-1.5 transition-colors whitespace-nowrap"
+            className="inline-flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-800 border border-blue-200 hover:border-blue-400 rounded-lg px-3 py-2 sm:py-1.5 transition-colors whitespace-nowrap flex-1 sm:flex-none justify-center sm:justify-start"
           >
             🗺️ Cómo llegar
           </a>
           {center.phone && (
             <a
               href={`tel:${center.phone}`}
-              className="inline-flex items-center gap-1 text-xs font-medium text-green-700 hover:text-green-900 border border-green-200 hover:border-green-400 rounded-lg px-3 py-1.5 transition-colors"
+              className="inline-flex items-center gap-1 text-xs font-medium text-green-700 hover:text-green-900 border border-green-200 hover:border-green-400 rounded-lg px-3 py-2 sm:py-1.5 transition-colors flex-1 sm:flex-none justify-center sm:justify-start"
             >
               📞 {center.phone}
             </a>
