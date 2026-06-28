@@ -1,0 +1,24 @@
+@import "tailwindcss";
+
+:root {
+  --background: #F9FAFB;
+  --foreground: #111827;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-emergency: #DC2626;
+  --color-emergency-dark: #B91C1C;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, sans-serif;
+}
+
+/* Leaflet override for z-index issues in Next.js */
+.leaflet-container {
+  z-index: 0;
+}
