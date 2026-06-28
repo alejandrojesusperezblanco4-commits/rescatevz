@@ -291,3 +291,95 @@ ON CONFLICT DO NOTHING;
 -- Después de registrarte, ejecuta esto con tu UUID:
 -- UPDATE public.profiles SET role = 'admin', is_verified = TRUE WHERE id = 'TU-UUID-AQUI';
 -- ============================================================
+
+-- ============================================================
+-- MIGRACIÓN: búsqueda pública sin exponer datos sensibles
+-- Seguro de re-ejecutar sobre una base ya creada con el bloque anterior.
+-- ============================================================
+
+-- Búsqueda pública: solo confirma ubicación + estado de salud.
+-- Nunca expone nombre, cédula, descripción física, notas ni fotos.
+-- SECURITY DEFINER + columnas fijas en RETURNS TABLE = el llamante
+-- jamás puede pedir una columna distinta a las cuatro listadas aquí,
+-- a diferencia de exponer la tabla victims directamente vía RLS.
+CREATE OR REPLACE FUNCTION public.search_victims_public(p_query TEXT)
+RETURNS TABLE (
+  victim_id     UUID,
+  location_name TEXT,
+  location_type TEXT,
+  victim_status TEXT
+)
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT
+    v.id,
+    COALESCE(l.name, 'Ubicación no registrada'),
+    COALESCE(l.type, 'unknown'),
+    v.status
+  FROM public.victims v
+  LEFT JOIN public.locations l ON l.id = v.current_location_id
+  WHERE v.is_minor = FALSE
+    AND length(trim(p_query)) >= 3
+    AND (v.name ILIKE '%' || p_query || '%' OR v.physical_description ILIKE '%' || p_query || '%')
+  LIMIT 20;
+$$;
+
+REVOKE ALL ON FUNCTION public.search_victims_public(TEXT) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.search_victims_public(TEXT) TO anon, authenticated;
+
+-- Reportes de menores: nunca se busca por texto libre ni se hace
+-- matching automático. Cualquiera puede reportar; solo admin lee/revisa
+-- y cruza manualmente contra los menores ya registrados.
+CREATE TABLE IF NOT EXISTS public.minor_inquiries (
+  id               UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  reporter_name    TEXT NOT NULL,
+  reporter_contact TEXT NOT NULL,
+  description      TEXT NOT NULL,
+  status           TEXT NOT NULL DEFAULT 'pending'
+                     CHECK (status IN ('pending', 'reviewed')),
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+ALTER TABLE public.minor_inquiries ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "minor_inquiries: insertar" ON public.minor_inquiries;
+CREATE POLICY "minor_inquiries: insertar"
+  ON public.minor_inquiries FOR INSERT
+  WITH CHECK (TRUE);
+
+DROP POLICY IF EXISTS "minor_inquiries: leer (admin)" ON public.minor_inquiries;
+CREATE POLICY "minor_inquiries: leer (admin)"
+  ON public.minor_inquiries FOR SELECT
+  USING (public.is_admin());
+
+DROP POLICY IF EXISTS "minor_inquiries: actualizar (admin)" ON public.minor_inquiries;
+CREATE POLICY "minor_inquiries: actualizar (admin)"
+  ON public.minor_inquiries FOR UPDATE
+  USING (public.is_admin());
+
+-- Tipo de documento de identidad para la solicitud de acceso familiar.
+-- Un menor de ~9 años en Venezuela aún no tiene cédula, por lo que el
+-- familiar prueba el parentesco con el acta de nacimiento del menor.
+ALTER TABLE public.access_requests
+  ADD COLUMN IF NOT EXISTS id_document_type TEXT NOT NULL DEFAULT 'cedula'
+    CHECK (id_document_type IN ('cedula', 'acta_nacimiento'));
+
+-- Un familiar con solicitud aprobada y vigente puede ver el perfil
+-- completo de ESA víctima puntual (no de todas). Esto no afecta las
+-- políticas de staff de arriba: en RLS, varias policies permisivas para
+-- el mismo comando se combinan con OR.
+DROP POLICY IF EXISTS "victims: leer (familiar aprobado)" ON public.victims;
+CREATE POLICY "victims: leer (familiar aprobado)"
+  ON public.victims FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.access_requests ar
+      WHERE ar.victim_id = victims.id
+        AND ar.family_user_id = auth.uid()
+        AND ar.status = 'approved'
+        AND ar.expires_at > NOW()
+    )
+  );

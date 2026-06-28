@@ -26,6 +26,7 @@ export default function Header({ profile }: HeaderProps) {
     { href: '/victimas/nueva', label: 'Registrar víctima', roles: ['admin', 'rescuer', 'medical'] },
     { href: '/buscar', label: 'Buscar familiar', roles: ['admin', 'rescuer', 'medical', 'family'] },
     { href: '/mapa-publico', label: 'Mapa', roles: ['admin', 'rescuer', 'medical', 'family'] },
+    { href: '/mis-solicitudes', label: 'Mis solicitudes', roles: ['family'] },
     { href: '/solicitudes', label: 'Solicitudes', roles: ['admin'] },
   ] as const
 

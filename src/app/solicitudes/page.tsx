@@ -19,6 +19,7 @@ export default async function SolicitudesPage() {
       status,
       relationship_description,
       id_document_url,
+      id_document_type,
       created_at,
       approved_at,
       expires_at,

@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
+import type { Map as LeafletMap } from 'leaflet'
 import type { Location } from '@/lib/types'
 
 interface MapaRescateProps {
@@ -9,7 +10,7 @@ interface MapaRescateProps {
 
 export default function MapaRescate({ locations }: MapaRescateProps) {
   const mapRef = useRef<HTMLDivElement>(null)
-  const mapInstanceRef = useRef<any>(null)
+  const mapInstanceRef = useRef<LeafletMap | null>(null)
 
   useEffect(() => {
     if (!mapRef.current || mapInstanceRef.current) return
@@ -19,7 +20,7 @@ export default function MapaRescate({ locations }: MapaRescateProps) {
       import('leaflet/dist/leaflet.css')
 
       // Fix default icon paths
-      delete (L.Icon.Default.prototype as any)._getIconUrl
+      delete (L.Icon.Default.prototype as unknown as { _getIconUrl?: unknown })._getIconUrl
       L.Icon.Default.mergeOptions({
         iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
         iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',

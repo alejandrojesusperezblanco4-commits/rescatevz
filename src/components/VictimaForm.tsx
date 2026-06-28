@@ -32,19 +32,19 @@ export default function VictimaForm({ locations, userId }: VictimaFormProps) {
 
     const supabase = createClient()
 
-    // Upload photos
-    const photoUrls: string[] = []
+    // Bucket privado: guardamos solo el path. Las fotos se sirven después
+    // mediante URL firmada y temporal, nunca con una URL pública directa.
+    const photoPaths: string[] = []
     for (const photo of photos) {
       const ext = photo.name.split('.').pop()
-      const path = `victims/${userId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+      const path = `${userId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
       const { error: uploadError } = await supabase.storage.from('victim-photos').upload(path, photo)
       if (uploadError) {
         setError('Error subiendo foto: ' + uploadError.message)
         setLoading(false)
         return
       }
-      const { data: urlData } = supabase.storage.from('victim-photos').getPublicUrl(path)
-      photoUrls.push(urlData.publicUrl)
+      photoPaths.push(path)
     }
 
     const { error: insertError } = await supabase.from('victims').insert({
@@ -56,7 +56,7 @@ export default function VictimaForm({ locations, userId }: VictimaFormProps) {
       status,
       found_location: foundLocation.trim(),
       current_location_id: currentLocationId || null,
-      photo_urls: photoUrls,
+      photo_urls: photoPaths,
       notes: notes.trim() || null,
     })
 

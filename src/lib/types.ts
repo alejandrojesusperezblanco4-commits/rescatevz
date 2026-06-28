@@ -49,11 +49,14 @@ export interface Victim {
   current_location?: Location
 }
 
+export type IdDocumentType = 'cedula' | 'acta_nacimiento'
+
 export interface AccessRequest {
   id: string
   family_user_id: string
   victim_id: string
   id_document_url: string
+  id_document_type: IdDocumentType
   relationship_description: string
   status: AccessRequestStatus
   approved_by: string | null
@@ -64,15 +67,22 @@ export interface AccessRequest {
   family_user?: Pick<Profile, 'id' | 'email' | 'full_name'>
 }
 
-export interface SearchResult {
+// Resultado de la función RPC search_victims_public: a propósito solo
+// trae estos 4 campos, nunca nombre, cédula, foto ni descripción física.
+export interface PublicSearchMatch {
+  victim_id: string
   location_name: string
-  location_type: LocationType
-  location_id: string
-  match_count: number
-  victim_id?: string
-  victim_name?: string | null
-  victim_status?: VictimStatus
-  is_minor?: boolean
+  location_type: string
+  victim_status: VictimStatus
+}
+
+export interface MinorInquiry {
+  id: string
+  reporter_name: string
+  reporter_contact: string
+  description: string
+  status: 'pending' | 'reviewed'
+  created_at: string
 }
 
 export const STATUS_LABELS: Record<VictimStatus, string> = {
