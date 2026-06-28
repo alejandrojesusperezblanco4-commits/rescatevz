@@ -365,3 +365,60 @@ ALTER TABLE public.locations
     CHECK (type IN ('hospital', 'shelter', 'rescue_zone', 'collapsed_building', 'collection_center'));
 
 ALTER TABLE public.locations ADD COLUMN IF NOT EXISTS needs TEXT[] NOT NULL DEFAULT '{}';
+
+-- ============================================================
+-- MIGRACIÓN: reportante + seguimiento de estado
+-- ============================================================
+
+-- Contacto de quien reporta (en víctima)
+ALTER TABLE public.victims ADD COLUMN IF NOT EXISTS reporter_name  TEXT;
+ALTER TABLE public.victims ADD COLUMN IF NOT EXISTS reporter_email TEXT;
+ALTER TABLE public.victims ADD COLUMN IF NOT EXISTS reporter_phone TEXT;
+
+-- Contacto de quien reportó el edificio derrumbado (en locations)
+ALTER TABLE public.locations ADD COLUMN IF NOT EXISTS reporter_email TEXT;
+ALTER TABLE public.locations ADD COLUMN IF NOT EXISTS reporter_phone TEXT;
+
+-- Log de cambios de estado (append-only)
+CREATE TABLE IF NOT EXISTS public.victim_status_log (
+  id         UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  victim_id  UUID NOT NULL REFERENCES public.victims(id) ON DELETE CASCADE,
+  old_status TEXT,
+  new_status TEXT NOT NULL,
+  changed_by UUID REFERENCES public.profiles(id),
+  notes      TEXT,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+ALTER TABLE public.victim_status_log ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY IF NOT EXISTS "status_log: insertar (staff)"
+  ON public.victim_status_log FOR INSERT
+  WITH CHECK (public.current_user_role() IN ('admin', 'medical', 'rescuer'));
+
+-- Lectura pública: solo expone old_status, new_status, created_at (sin PII)
+CREATE POLICY IF NOT EXISTS "status_log: leer (público)"
+  ON public.victim_status_log FOR SELECT
+  USING (TRUE);
+
+-- Trigger que registra automáticamente cada cambio de estado
+CREATE OR REPLACE FUNCTION public.log_victim_status_change()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF OLD.status IS DISTINCT FROM NEW.status THEN
+    INSERT INTO public.victim_status_log (victim_id, old_status, new_status, changed_by)
+    VALUES (NEW.id, OLD.status, NEW.status, auth.uid());
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS victim_status_log_trigger ON public.victims;
+CREATE TRIGGER victim_status_log_trigger
+  AFTER UPDATE ON public.victims
+  FOR EACH ROW EXECUTE FUNCTION public.log_victim_status_change();
+
+-- Staff puede actualizar víctimas (rescuer también para actualizar estado en campo)
+CREATE POLICY IF NOT EXISTS "victims: actualizar (staff verificado)"
+  ON public.victims FOR UPDATE
+  USING (public.is_verified_staff());

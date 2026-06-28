@@ -95,6 +95,12 @@ export default function VictimaForm({ locations, userId }: VictimaFormProps) {
   const [loading, setLoading]           = useState(false)
   const [error, setError]               = useState('')
   const [success, setSuccess]           = useState(false)
+  const [insertedId, setInsertedId]     = useState<string | null>(null)
+
+  // Datos del reportante
+  const [reporterName, setReporterName]   = useState('')
+  const [reporterEmail, setReporterEmail] = useState('')
+  const [reporterPhone, setReporterPhone] = useState('')
 
   const cedulaTimer  = useRef<ReturnType<typeof setTimeout> | null>(null)
   const partidaTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -171,7 +177,7 @@ export default function VictimaForm({ locations, userId }: VictimaFormProps) {
       photoUrls.push(urlData.publicUrl)
     }
 
-    const { error: insertError } = await supabase.from('victims').insert({
+    const { data: inserted, error: insertError } = await supabase.from('victims').insert({
       created_by:           userId,
       name:                 name.trim() || null,
       cedula:               (!isMinor && normalizedCedula) ? normalizedCedula : null,
@@ -185,7 +191,10 @@ export default function VictimaForm({ locations, userId }: VictimaFormProps) {
       current_location_id:  currentLocationId || null,
       photo_urls:           photoUrls,
       notes:                notes.trim() || null,
-    })
+      reporter_name:        reporterName.trim() || null,
+      reporter_email:       reporterEmail.trim().toLowerCase() || null,
+      reporter_phone:       reporterPhone.trim() || null,
+    }).select('id').single()
 
     if (insertError) {
       if (insertError.code === '23505') {
@@ -195,6 +204,8 @@ export default function VictimaForm({ locations, userId }: VictimaFormProps) {
       }
       setLoading(false); return
     }
+
+    setInsertedId(inserted?.id ?? null)
 
     await supabase.from('audit_log').insert({
       user_id: userId, action: 'CREATE_VICTIM', resource_type: 'victim',
@@ -208,19 +219,63 @@ export default function VictimaForm({ locations, userId }: VictimaFormProps) {
     setName(''); setCedula(''); setCedulaState('idle'); setCedulaDup(null)
     setPartida(''); setPartidaState('idle'); setPartidaDup(null); setTutorCedula('')
     setDescription(''); setPhotos([])
+    setReporterName(''); setReporterEmail(''); setReporterPhone('')
+    setInsertedId(null)
     setSuccess(false)
   }
 
   // ── Éxito ──────────────────────────────────────────────────────────────────
   if (success) {
+    const trackingUrl = insertedId ? `${typeof window !== 'undefined' ? window.location.origin : ''}/seguimiento/${insertedId}` : null
+
     return (
-      <div className="bg-green-50 border border-green-200 rounded-xl p-8 text-center">
-        <div className="text-4xl mb-3">✅</div>
-        <h2 className="text-xl font-bold text-green-800 mb-2">Registro guardado exitosamente</h2>
-        <p className="text-green-700 text-sm mb-6">El registro estará disponible para búsqueda familiar.</p>
+      <div className="bg-green-50 border border-green-200 rounded-xl p-6 sm:p-8">
+        <div className="text-4xl mb-3 text-center">✅</div>
+        <h2 className="text-xl font-bold text-green-800 mb-2 text-center">Registro guardado exitosamente</h2>
+        <p className="text-green-700 text-sm mb-5 text-center">El caso estará disponible para búsqueda familiar.</p>
+
+        {trackingUrl && (
+          <div className="bg-white border border-green-300 rounded-lg p-4 mb-5">
+            <p className="text-xs font-semibold text-gray-700 mb-1">
+              Enlace de seguimiento para el reportante
+            </p>
+            <p className="text-xs text-gray-500 mb-2">
+              Comparte esta URL con quien reportó el caso. Podrán ver actualizaciones de estado sin necesidad de registrarse.
+            </p>
+            <div className="flex items-center gap-2">
+              <code className="flex-1 text-xs bg-gray-50 border border-gray-200 rounded px-2 py-1.5 text-gray-800 break-all">
+                {trackingUrl}
+              </code>
+              <button
+                type="button"
+                onClick={() => navigator.clipboard?.writeText(trackingUrl)}
+                className="shrink-0 text-xs bg-green-600 text-white px-2 py-1.5 rounded font-medium hover:bg-green-700 transition-colors"
+              >
+                Copiar
+              </button>
+            </div>
+            {reporterEmail && (
+              <p className="text-xs text-green-700 mt-2">
+                Recibirán actualizaciones por correo en <strong>{reporterEmail}</strong> cuando cambie el estado.
+              </p>
+            )}
+          </div>
+        )}
+
+        {insertedId && (
+          <div className="mb-5">
+            <a
+              href={`/victimas/${insertedId}`}
+              className="block text-center text-sm text-blue-600 hover:underline font-medium"
+            >
+              Ver perfil completo del caso →
+            </a>
+          </div>
+        )}
+
         <div className="flex gap-3 justify-center">
           <button onClick={resetForm} className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700 transition-colors">
-            Registrar otra
+            Registrar otra persona
           </button>
           <button onClick={() => router.push('/dashboard')} className="border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors">
             Ir al panel
@@ -442,6 +497,49 @@ export default function VictimaForm({ locations, userId }: VictimaFormProps) {
           placeholder="Información adicional relevante para médicos o familia"
           className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
         />
+      </div>
+
+      {/* ── Datos del reportante ── */}
+      <div className="border border-blue-100 bg-blue-50 rounded-xl p-4 space-y-3">
+        <div>
+          <p className="text-sm font-semibold text-blue-900">
+            {status === 'missing' ? '🔍 Datos de quien denuncia la desaparición' : '📋 Datos de contacto del reportante'}
+          </p>
+          <p className="text-xs text-blue-700 mt-0.5">
+            Opcional pero recomendado — recibirán actualizaciones automáticas por correo cuando cambie el estado.
+          </p>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">Nombre del reportante</label>
+            <input
+              type="text" value={reporterName} onChange={e => setReporterName(e.target.value)}
+              placeholder="Nombre y apellido"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">Teléfono / WhatsApp</label>
+            <input
+              type="tel" value={reporterPhone} onChange={e => setReporterPhone(e.target.value)}
+              placeholder="+58 412 000 0000"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+            />
+          </div>
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-gray-700 mb-1">Correo electrónico</label>
+          <input
+            type="email" value={reporterEmail} onChange={e => setReporterEmail(e.target.value)}
+            placeholder="correo@ejemplo.com"
+            className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+          />
+          {reporterEmail && (
+            <p className="text-xs text-blue-600 mt-1">
+              Se enviará una notificación a este correo cada vez que cambie el estado del caso.
+            </p>
+          )}
+        </div>
       </div>
 
       {error && (

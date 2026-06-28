@@ -57,9 +57,22 @@ export interface Victim {
   current_location_id: string | null
   photo_urls: string[]
   notes: string | null
+  reporter_name: string | null
+  reporter_email: string | null
+  reporter_phone: string | null
   created_at: string
   updated_at: string
   current_location?: Location
+}
+
+export interface VictimStatusLog {
+  id: string
+  victim_id: string
+  old_status: VictimStatus | null
+  new_status: VictimStatus
+  changed_by: string | null
+  notes: string | null
+  created_at: string
 }
 
 export interface AccessRequest {
