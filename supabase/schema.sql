@@ -16,7 +16,7 @@ CREATE TABLE public.profiles (
   email       TEXT NOT NULL,
   full_name   TEXT NOT NULL DEFAULT '',
   role        TEXT NOT NULL DEFAULT 'family'
-                CHECK (role IN ('admin', 'rescuer', 'medical', 'family')),
+                CHECK (role IN ('admin', 'rescuer', 'medical', 'family', 'ngo')),
   cedula      TEXT,
   cedula_photo_url TEXT,
   selfie_url  TEXT,
@@ -28,13 +28,14 @@ CREATE TABLE public.profiles (
 CREATE TABLE public.locations (
   id                UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
   name              TEXT NOT NULL,
-  type              TEXT NOT NULL CHECK (type IN ('hospital', 'shelter', 'rescue_zone', 'collapsed_building')),
+  type              TEXT NOT NULL CHECK (type IN ('hospital', 'shelter', 'rescue_zone', 'collapsed_building', 'collection_center')),
   lat               DECIMAL(10, 7) NOT NULL,
   lng               DECIMAL(10, 7) NOT NULL,
   address           TEXT,
   phone             TEXT,
   capacity          INTEGER,
   current_occupancy INTEGER NOT NULL DEFAULT 0,
+  needs             TEXT[] NOT NULL DEFAULT '{}', -- artículos que necesita el centro de acopio
   is_active         BOOLEAN NOT NULL DEFAULT TRUE,
   created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -160,6 +161,22 @@ CREATE POLICY "locations: rescatista registra derrumbe"
     public.is_verified_staff()
     AND type = 'collapsed_building'
   );
+
+CREATE OR REPLACE FUNCTION public.is_verified_ngo()
+RETURNS BOOLEAN AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.profiles
+    WHERE id = auth.uid() AND role = 'ngo' AND is_verified = TRUE
+  )
+$$ LANGUAGE sql SECURITY DEFINER STABLE;
+
+CREATE POLICY "locations: ngo registra centro de acopio"
+  ON public.locations FOR INSERT
+  WITH CHECK (public.is_verified_ngo() AND type = 'collection_center');
+
+CREATE POLICY "locations: ngo actualiza centro de acopio"
+  ON public.locations FOR UPDATE
+  USING (public.is_verified_ngo() AND type = 'collection_center');
 
 -- VICTIMS: staff verificado puede crear; staff puede leer adultos; medical/admin pueden ver menores
 CREATE POLICY "victims: crear (staff verificado)"
@@ -335,3 +352,16 @@ ALTER TABLE public.victims ADD COLUMN IF NOT EXISTS partida_nacimiento TEXT;
 ALTER TABLE public.victims ADD COLUMN IF NOT EXISTS tutor_cedula       TEXT;
 CREATE UNIQUE INDEX IF NOT EXISTS victims_cedula_unique  ON public.victims (cedula)             WHERE cedula IS NOT NULL;
 CREATE UNIQUE INDEX IF NOT EXISTS victims_partida_unique ON public.victims (partida_nacimiento) WHERE partida_nacimiento IS NOT NULL;
+
+-- ONGs y centros de acopio
+ALTER TABLE public.profiles
+  DROP CONSTRAINT IF EXISTS profiles_role_check,
+  ADD CONSTRAINT profiles_role_check
+    CHECK (role IN ('admin', 'rescuer', 'medical', 'family', 'ngo'));
+
+ALTER TABLE public.locations
+  DROP CONSTRAINT IF EXISTS locations_type_check,
+  ADD CONSTRAINT locations_type_check
+    CHECK (type IN ('hospital', 'shelter', 'rescue_zone', 'collapsed_building', 'collection_center'));
+
+ALTER TABLE public.locations ADD COLUMN IF NOT EXISTS needs TEXT[] NOT NULL DEFAULT '{}';

@@ -40,7 +40,7 @@ export default function LandingPage() {
             Plataforma segura para registrar víctimas rescatadas, localizar hospitales y refugios, y reunir familias.
           </p>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Link
               href="/registro?rol=rescuer"
               className="bg-red-600 hover:bg-red-700 text-white rounded-xl p-6 text-left transition-colors"
@@ -65,7 +65,16 @@ export default function LandingPage() {
             >
               <div className="text-3xl mb-3">🗺️</div>
               <h2 className="font-bold text-lg mb-1">Ver el mapa</h2>
-              <p className="text-gray-500 text-sm">Hospitales y refugios activos con capacidad disponible</p>
+              <p className="text-gray-500 text-sm">Hospitales, refugios y zonas de rescate activos</p>
+            </Link>
+
+            <Link
+              href="/como-ayudar"
+              className="bg-green-600 hover:bg-green-700 text-white rounded-xl p-6 text-left transition-colors"
+            >
+              <div className="text-3xl mb-3">📦</div>
+              <h2 className="font-bold text-lg mb-1">Quiero ayudar</h2>
+              <p className="text-green-100 text-sm">Centros de acopio y ONGs donde puedes llevar donaciones y suministros</p>
             </Link>
           </div>
 

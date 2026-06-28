@@ -8,7 +8,7 @@ export default async function MapaPublicoPage() {
 
   const { data: locations } = await supabase
     .from('locations')
-    .select('id, name, type, lat, lng, address, phone, capacity, current_occupancy, is_active')
+    .select('id, name, type, lat, lng, address, phone, capacity, current_occupancy, needs, is_active')
     .eq('is_active', true)
     .order('type')
 
@@ -37,9 +37,10 @@ export default async function MapaPublicoPage() {
     }
   })
 
-  const hospitals  = locationsWithCount.filter(l => l.type === 'hospital')
-  const shelters   = locationsWithCount.filter(l => l.type === 'shelter')
-  const collapsed  = locationsWithCount.filter(l => l.type === 'collapsed_building')
+  const hospitals   = locationsWithCount.filter(l => l.type === 'hospital')
+  const shelters    = locationsWithCount.filter(l => l.type === 'shelter')
+  const collapsed   = locationsWithCount.filter(l => l.type === 'collapsed_building')
+  const collections = locationsWithCount.filter(l => l.type === 'collection_center')
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
@@ -83,6 +84,12 @@ export default async function MapaPublicoPage() {
                   Derrumbes ({collapsed.length})
                 </span>
               )}
+              {collections.length > 0 && (
+                <span className="flex items-center gap-1.5">
+                  <span className="w-3 h-3 rounded-full bg-green-600 inline-block" />
+                  Acopio/ONG ({collections.length})
+                </span>
+              )}
             </div>
 
             {/* Edificios derrumbados — primero por urgencia */}
@@ -111,13 +118,30 @@ export default async function MapaPublicoPage() {
             )}
 
             {shelters.length > 0 && (
-              <div>
+              <div className="mb-6">
                 <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Refugios activos</h2>
                 <div className="space-y-2">
                   {shelters.map(loc => (
                     <LocationCard key={loc.id} location={loc} />
                   ))}
                 </div>
+              </div>
+            )}
+
+            {collections.length > 0 && (
+              <div>
+                <h2 className="text-xs font-semibold text-green-700 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                  📦 Centros de acopio y ONGs
+                </h2>
+                <div className="space-y-2">
+                  {collections.map(loc => (
+                    <CollectionCard key={loc.id} location={loc} />
+                  ))}
+                </div>
+                <p className="text-xs text-gray-400 mt-3">
+                  Puedes llevar donaciones directamente a estos puntos.{' '}
+                  <a href="/como-ayudar" className="text-green-700 underline font-medium">Ver lista completa →</a>
+                </p>
               </div>
             )}
 
@@ -188,6 +212,36 @@ function CollapsedCard({ location }: { location: Location }) {
             ? <StatusPills counts={counts} />
             : <p className="text-xs text-amber-600 mt-1.5">Sin personas registradas aún</p>
           }
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function CollectionCard({ location }: { location: Location }) {
+  return (
+    <div className="border-2 border-green-200 bg-green-50 rounded-lg p-3 hover:border-green-400 transition-colors">
+      <div className="flex items-start gap-2">
+        <span className="text-base mt-0.5">📦</span>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-green-900 leading-tight">{location.name}</p>
+          {location.address && (
+            <p className="text-xs text-green-700 mt-0.5 truncate">{location.address}</p>
+          )}
+          {location.needs && location.needs.length > 0 ? (
+            <div className="flex flex-wrap gap-1 mt-1.5">
+              {location.needs.map(n => (
+                <span key={n} className="text-xs font-medium px-1.5 py-0.5 rounded bg-green-100 text-green-800">{n}</span>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-green-600 mt-1">Contactar para ver qué necesitan</p>
+          )}
+          {location.phone && (
+            <a href={`tel:${location.phone}`} className="text-xs text-green-700 hover:underline mt-1 block font-medium">
+              📞 {location.phone}
+            </a>
+          )}
         </div>
       </div>
     </div>

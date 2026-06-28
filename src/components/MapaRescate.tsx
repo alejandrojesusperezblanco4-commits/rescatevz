@@ -6,10 +6,11 @@ import type { Location, LocationType, VictimStatusCounts } from '@/lib/types'
 type FilterType = LocationType | 'all'
 
 const FILTER_OPTIONS: { value: FilterType; label: string; emoji: string; color: string }[] = [
-  { value: 'all',                label: 'Todos',      emoji: '📍', color: '#374151' },
-  { value: 'hospital',           label: 'Hospitales', emoji: '🏥', color: '#DC2626' },
-  { value: 'shelter',            label: 'Refugios',   emoji: '🏕️', color: '#2563EB' },
-  { value: 'collapsed_building', label: 'Derrumbes',  emoji: '🏚️', color: '#D97706' },
+  { value: 'all',                label: 'Todos',       emoji: '📍', color: '#374151' },
+  { value: 'hospital',           label: 'Hospitales',  emoji: '🏥', color: '#DC2626' },
+  { value: 'shelter',            label: 'Refugios',    emoji: '🏕️', color: '#2563EB' },
+  { value: 'collapsed_building', label: 'Derrumbes',   emoji: '🏚️', color: '#D97706' },
+  { value: 'collection_center',  label: 'Acopio/ONG',  emoji: '📦', color: '#16A34A' },
 ]
 
 interface MarkerConfig {
@@ -23,8 +24,9 @@ function getMarkerConfig(type: LocationType): MarkerConfig {
   switch (type) {
     case 'hospital':           return { color: '#DC2626', emoji: '🏥', label: 'Hospital',            shape: 'pin' }
     case 'shelter':            return { color: '#2563EB', emoji: '🏕️', label: 'Refugio',             shape: 'pin' }
-    case 'collapsed_building': return { color: '#D97706', emoji: '🏚️', label: 'Edificio derrumbado', shape: 'square' }
-    default:                   return { color: '#6B7280', emoji: '📍', label: 'Ubicación',           shape: 'pin' }
+    case 'collapsed_building': return { color: '#D97706', emoji: '🏚️', label: 'Edificio derrumbado',    shape: 'square' }
+    case 'collection_center':  return { color: '#16A34A', emoji: '📦', label: 'Centro de acopio / ONG', shape: 'pin' }
+    default:                   return { color: '#6B7280', emoji: '📍', label: 'Ubicación',               shape: 'pin' }
   }
 }
 
@@ -49,16 +51,34 @@ function buildVictimSection(counts: VictimStatusCounts): string {
     </div>`
 }
 
+function buildNeedsSection(needs: string[]): string {
+  if (!needs || needs.length === 0) return ''
+  const pills = needs.map(n =>
+    `<span style="display:inline-block;background:#DCFCE7;color:#166534;border-radius:999px;padding:2px 8px;font-size:11px;font-weight:500;margin:2px;">${n}</span>`
+  ).join('')
+  return `
+    <div style="margin-top:8px;padding-top:8px;border-top:1px solid #E5E7EB;">
+      <div style="font-size:11px;font-weight:600;color:#374151;margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em;">Necesitan</div>
+      <div style="display:flex;flex-wrap:wrap;gap:2px;">${pills}</div>
+    </div>`
+}
+
 function buildPopupContent(loc: Location, cfg: MarkerConfig): string {
   const occupancy = loc.capacity
     ? `<div style="font-size:12px;color:#6B7280;margin-top:4px;">Capacidad: ${loc.current_occupancy}/${loc.capacity}</div>`
     : ''
 
-  const victimSection = loc.victim_counts
-    ? buildVictimSection(loc.victim_counts)
-    : (loc.victim_count && loc.victim_count > 0
-        ? `<div style="font-size:12px;color:#DC2626;font-weight:600;margin-top:4px;">Registradas: ${loc.victim_count}</div>`
-        : '')
+  const needsSection = loc.type === 'collection_center'
+    ? buildNeedsSection(loc.needs ?? [])
+    : ''
+
+  const victimSection = loc.type !== 'collection_center'
+    ? (loc.victim_counts
+        ? buildVictimSection(loc.victim_counts)
+        : (loc.victim_count && loc.victim_count > 0
+            ? `<div style="font-size:12px;color:#DC2626;font-weight:600;margin-top:4px;">Registradas: ${loc.victim_count}</div>`
+            : ''))
+    : ''
 
   const phone = loc.phone
     ? `<div style="font-size:12px;color:#2563EB;margin-top:4px;">📞 ${loc.phone}</div>`
@@ -71,7 +91,7 @@ function buildPopupContent(loc: Location, cfg: MarkerConfig): string {
         ${cfg.emoji} ${cfg.label}
       </div>
       ${loc.address ? `<div style="font-size:12px;color:#374151;margin-top:6px;">${loc.address}</div>` : ''}
-      ${occupancy}${victimSection}${phone}
+      ${occupancy}${needsSection}${victimSection}${phone}
     </div>`
 }
 
@@ -86,7 +106,8 @@ export default function MapaRescate({ locations }: { locations: Location[] }) {
   const [activeFilter, setActiveFilter] = useState<FilterType>('all')
   const filterRef = useRef<FilterType>('all')
 
-  const hasCollapsed = locations.some(l => l.type === 'collapsed_building')
+  const hasCollapsed   = locations.some(l => l.type === 'collapsed_building')
+  const hasCollection  = locations.some(l => l.type === 'collection_center')
 
   const renderMarkers = useCallback(() => {
     const L   = lRef.current
@@ -180,7 +201,10 @@ export default function MapaRescate({ locations }: { locations: Location[] }) {
         className="flex flex-col gap-1.5"
       >
         {FILTER_OPTIONS
-          .filter(opt => opt.value !== 'collapsed_building' || hasCollapsed)
+          .filter(opt =>
+            (opt.value !== 'collapsed_building' || hasCollapsed) &&
+            (opt.value !== 'collection_center'  || hasCollection)
+          )
           .map(opt => (
             <button
               key={opt.value}

@@ -1,8 +1,8 @@
-export type UserRole = 'admin' | 'rescuer' | 'medical' | 'family'
+export type UserRole = 'admin' | 'rescuer' | 'medical' | 'family' | 'ngo'
 
 export type VictimStatus = 'alive' | 'critical' | 'deceased' | 'missing' | 'unknown'
 
-export type LocationType = 'hospital' | 'shelter' | 'rescue_zone' | 'collapsed_building'
+export type LocationType = 'hospital' | 'shelter' | 'rescue_zone' | 'collapsed_building' | 'collection_center'
 
 export interface VictimStatusCounts {
   alive: number
@@ -37,6 +37,7 @@ export interface Location {
   capacity: number | null
   current_occupancy: number
   is_active: boolean
+  needs?: string[]
   victim_count?: number
   victim_counts?: VictimStatusCounts
 }
@@ -104,15 +105,25 @@ export const STATUS_COLORS: Record<VictimStatus, string> = {
 }
 
 export const LOCATION_TYPE_LABELS: Record<LocationType, string> = {
-  hospital: 'Hospital',
-  shelter: 'Refugio',
-  rescue_zone: 'Zona de rescate',
+  hospital:           'Hospital',
+  shelter:            'Refugio',
+  rescue_zone:        'Zona de rescate',
   collapsed_building: 'Edificio derrumbado',
+  collection_center:  'Centro de acopio / ONG',
 }
 
 export const ROLE_LABELS: Record<UserRole, string> = {
-  admin: 'Administrador',
+  admin:   'Administrador',
   rescuer: 'Rescatista',
   medical: 'Personal médico',
-  family: 'Familiar',
+  family:  'Familiar',
+  ngo:     'ONG / Centro de acopio',
+}
+
+export const ROLE_DESCRIPTIONS: Record<UserRole, string> = {
+  family:  'Busco a un familiar desaparecido. Podré solicitar acceso a registros tras verificar mi identidad.',
+  rescuer: 'Soy voluntario o rescatista activo en campo. Podré registrar víctimas tras aprobación de un administrador.',
+  medical: 'Soy médico, enfermero o personal de salud. Podré actualizar el estado médico de víctimas.',
+  ngo:     'Represento una ONG o centro de acopio. Publicaremos nuestra ubicación y qué artículos necesitamos.',
+  admin:   'Administrador del sistema.',
 }

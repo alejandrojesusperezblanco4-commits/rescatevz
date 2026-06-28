@@ -5,26 +5,23 @@ import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import type { UserRole } from '@/lib/types'
-import { ROLE_LABELS } from '@/lib/types'
+import { ROLE_LABELS, ROLE_DESCRIPTIONS } from '@/lib/types'
 import { Suspense } from 'react'
 
-const ROL_DESCRIPTIONS: Record<string, string> = {
-  family: 'Busco a un familiar desaparecido. Podré solicitar acceso a registros tras verificar mi identidad.',
-  rescuer: 'Soy voluntario o rescatista activo en campo. Podré registrar víctimas tras aprobación de un administrador.',
-  medical: 'Soy médico, enfermero o personal de salud. Podré actualizar el estado médico de víctimas.',
-}
+const REGISTRO_ROLES: UserRole[] = ['family', 'rescuer', 'medical', 'ngo']
 
 function RegistroForm() {
-  const router = useRouter()
+  const router       = useRouter()
   const searchParams = useSearchParams()
-  const rolParam = searchParams.get('rol') as UserRole | null
+  const rolParam     = searchParams.get('rol') as UserRole | null
 
-  const [rol, setRol] = useState<UserRole>(rolParam || 'family')
+  const [rol, setRol]         = useState<UserRole>(rolParam || 'family')
   const [fullName, setFullName] = useState('')
-  const [email, setEmail] = useState('')
+  const [email, setEmail]     = useState('')
   const [password, setPassword] = useState('')
-  const [cedula, setCedula] = useState('')
-  const [error, setError] = useState('')
+  const [cedula, setCedula]   = useState('')
+  const [orgName, setOrgName] = useState('')   // nombre de la ONG/organización
+  const [error, setError]     = useState('')
   const [loading, setLoading] = useState(false)
 
   async function handleRegister(e: React.FormEvent) {
@@ -37,7 +34,11 @@ function RegistroForm() {
       email,
       password,
       options: {
-        data: { full_name: fullName, role: rol, cedula },
+        data: {
+          full_name: rol === 'ngo' ? (orgName.trim() || fullName) : fullName,
+          role: rol,
+          cedula,
+        },
       },
     })
 
@@ -49,6 +50,8 @@ function RegistroForm() {
       router.refresh()
     }
   }
+
+  const needsVerification = rol !== 'family'
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
@@ -68,36 +71,66 @@ function RegistroForm() {
 
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
             <form onSubmit={handleRegister} className="space-y-4">
-              {/* Rol selector */}
+
+              {/* Selector de rol */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Soy…</label>
-                <div className="grid grid-cols-3 gap-2">
-                  {(['family', 'rescuer', 'medical'] as UserRole[]).map(r => (
+                <div className="grid grid-cols-2 gap-2">
+                  {REGISTRO_ROLES.map(r => (
                     <button
                       key={r}
                       type="button"
                       onClick={() => setRol(r)}
-                      className={`py-2 px-3 text-xs font-medium rounded-lg border transition-colors ${
+                      className={`py-2 px-3 text-xs font-medium rounded-lg border transition-colors text-left leading-tight ${
                         rol === r
-                          ? 'bg-red-600 text-white border-red-600'
+                          ? r === 'ngo'
+                            ? 'bg-green-600 text-white border-green-600'
+                            : 'bg-red-600 text-white border-red-600'
                           : 'bg-white text-gray-700 border-gray-300 hover:border-red-300'
                       }`}
                     >
+                      {r === 'family'  && '👨‍👩‍👧 '}
+                      {r === 'rescuer' && '🦺 '}
+                      {r === 'medical' && '🩺 '}
+                      {r === 'ngo'     && '📦 '}
                       {ROLE_LABELS[r]}
                     </button>
                   ))}
                 </div>
-                <p className="text-xs text-gray-500 mt-2">{ROL_DESCRIPTIONS[rol]}</p>
+                <p className="text-xs text-gray-500 mt-2">{ROLE_DESCRIPTIONS[rol]}</p>
               </div>
 
-              {rol !== 'family' && (
-                <div className="bg-amber-50 border border-amber-200 text-amber-800 text-xs px-3 py-2 rounded-lg">
-                  Tu cuenta quedará en revisión hasta que un administrador la verifique. Puedes navegar pero no podrás registrar víctimas aún.
+              {needsVerification && (
+                <div className={`border text-xs px-3 py-2 rounded-lg ${
+                  rol === 'ngo'
+                    ? 'bg-green-50 border-green-200 text-green-800'
+                    : 'bg-amber-50 border-amber-200 text-amber-800'
+                }`}>
+                  {rol === 'ngo'
+                    ? 'Tu cuenta quedará en revisión. Un administrador la verificará para que puedas publicar tu centro de acopio en el mapa.'
+                    : 'Tu cuenta quedará en revisión hasta que un administrador la verifique. Puedes navegar pero no podrás registrar víctimas aún.'}
+                </div>
+              )}
+
+              {/* Nombre de organización (solo NGO) */}
+              {rol === 'ngo' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Nombre de la ONG / organización</label>
+                  <input
+                    type="text"
+                    required
+                    value={orgName}
+                    onChange={e => setOrgName(e.target.value)}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    placeholder="Ej: Cruz Roja Venezolana — Chacao"
+                  />
                 </div>
               )}
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Nombre completo</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {rol === 'ngo' ? 'Nombre del coordinador/a' : 'Nombre completo'}
+                </label>
                 <input
                   type="text"
                   required
@@ -154,7 +187,9 @@ function RegistroForm() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-red-600 hover:bg-red-700 disabled:opacity-60 text-white font-medium py-2.5 rounded-lg transition-colors"
+                className={`w-full disabled:opacity-60 text-white font-medium py-2.5 rounded-lg transition-colors ${
+                  rol === 'ngo' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'
+                }`}
               >
                 {loading ? 'Creando cuenta…' : 'Crear cuenta'}
               </button>
