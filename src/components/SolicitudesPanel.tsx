@@ -3,13 +3,20 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import type { IdDocumentType } from '@/lib/types'
 import { STATUS_LABELS, STATUS_COLORS } from '@/lib/types'
+
+const DOCUMENT_TYPE_LABELS: Record<IdDocumentType, string> = {
+  cedula: 'Cédula',
+  acta_nacimiento: 'Acta de nacimiento',
+}
 
 interface Solicitud {
   id: string
   status: 'pending' | 'approved' | 'rejected'
   relationship_description: string
   id_document_url: string
+  id_document_type: IdDocumentType
   created_at: string
   victim: { id: string; name: string | null; physical_description: string; is_minor: boolean; status: string } | null
   family_user: { id: string; email: string; full_name: string; cedula: string | null } | null
@@ -26,8 +33,23 @@ export default function SolicitudesPanel({ solicitudes, adminId }: SolicitudesPa
   const router = useRouter()
   const [filter, setFilter] = useState<typeof STATUS_FILTERS[number]>('pending')
   const [processing, setProcessing] = useState<string | null>(null)
+  const [loadingDoc, setLoadingDoc] = useState<string | null>(null)
 
   const filtered = solicitudes.filter(s => filter === 'all' || s.status === filter)
+
+  async function handleViewDocument(path: string) {
+    setLoadingDoc(path)
+    const supabase = createClient()
+    // Bucket privado: generamos una URL firmada de corta duración en vez
+    // de exponer una URL pública permanente del documento de identidad.
+    const { data, error } = await supabase.storage.from('access-docs').createSignedUrl(path, 300)
+    setLoadingDoc(null)
+    if (error || !data) {
+      alert('No se pudo generar el enlace al documento: ' + (error?.message || 'desconocido'))
+      return
+    }
+    window.open(data.signedUrl, '_blank', 'noopener,noreferrer')
+  }
 
   async function handleDecision(solicitudId: string, decision: 'approved' | 'rejected') {
     setProcessing(solicitudId)
@@ -130,14 +152,13 @@ export default function SolicitudesPanel({ solicitudes, adminId }: SolicitudesPa
                 </div>
 
                 <div className="flex flex-col gap-2 shrink-0">
-                  <a
-                    href={s.id_document_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-lg text-center transition-colors"
+                  <button
+                    onClick={() => handleViewDocument(s.id_document_url)}
+                    disabled={loadingDoc === s.id_document_url}
+                    className="text-xs bg-gray-100 hover:bg-gray-200 disabled:opacity-60 text-gray-700 px-3 py-1.5 rounded-lg text-center transition-colors"
                   >
-                    Ver cédula
-                  </a>
+                    {loadingDoc === s.id_document_url ? 'Generando…' : `Ver ${DOCUMENT_TYPE_LABELS[s.id_document_type]}`}
+                  </button>
                   {s.status === 'pending' && (
                     <>
                       <button

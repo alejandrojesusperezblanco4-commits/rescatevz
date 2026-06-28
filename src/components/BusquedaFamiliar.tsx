@@ -3,18 +3,8 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import type { VictimStatus } from '@/lib/types'
+import type { PublicSearchMatch } from '@/lib/types'
 import { STATUS_LABELS, STATUS_COLORS } from '@/lib/types'
-
-interface SearchMatch {
-  victim_id: string
-  location_name: string
-  location_type: string
-  victim_status: VictimStatus
-  is_minor: boolean
-  has_name: boolean
-  name_hint?: string
-}
 
 interface SolicitudData {
   victimId: string
@@ -23,9 +13,10 @@ interface SolicitudData {
 
 export default function BusquedaFamiliar() {
   const [query, setQuery] = useState('')
-  const [results, setResults] = useState<SearchMatch[] | null>(null)
+  const [results, setResults] = useState<PublicSearchMatch[] | null>(null)
   const [loading, setLoading] = useState(false)
   const [searchCount, setSearchCount] = useState(0)
+  const [searchError, setSearchError] = useState('')
 
   // Solicitud de acceso
   const [solicitud, setSolicitud] = useState<SolicitudData | null>(null)
@@ -35,6 +26,16 @@ export default function BusquedaFamiliar() {
   const [solicitudSuccess, setSolicitudSuccess] = useState(false)
   const [solicitudError, setSolicitudError] = useState('')
 
+  // Reporte de menor (sin búsqueda automática)
+  const [showMenorForm, setShowMenorForm] = useState(false)
+  const [menorNombre, setMenorNombre] = useState('')
+  const [menorContacto, setMenorContacto] = useState('')
+  const [menorDescripcion, setMenorDescripcion] = useState('')
+  const [menorDocFile, setMenorDocFile] = useState<File | null>(null)
+  const [menorLoading, setMenorLoading] = useState(false)
+  const [menorSuccess, setMenorSuccess] = useState(false)
+  const [menorError, setMenorError] = useState('')
+
   async function handleSearch(e: React.FormEvent) {
     e.preventDefault()
     if (!query.trim() || query.trim().length < 3) return
@@ -42,36 +43,19 @@ export default function BusquedaFamiliar() {
 
     setLoading(true)
     setResults(null)
+    setSearchError('')
 
     const supabase = createClient()
 
-    // Full-text search on name and physical_description (non-minor only in public)
-    const { data, error } = await supabase
-      .from('victims')
-      .select(`
-        id,
-        name,
-        is_minor,
-        status,
-        current_location:locations(name, type)
-      `)
-      .eq('is_minor', false)
-      .or(`name.ilike.%${query}%,physical_description.ilike.%${query}%`)
-      .limit(20)
+    // RPC en vez de leer la tabla victims directamente: nunca devuelve
+    // nombre, cédula, foto ni descripción física, solo ubicación + estado.
+    const { data, error } = await supabase.rpc('search_victims_public', { p_query: query.trim() })
 
     if (error) {
+      setSearchError('No se pudo completar la búsqueda. Intenta de nuevo.')
       setResults([])
     } else {
-      const matches: SearchMatch[] = (data || []).map((v: any) => ({
-        victim_id: v.id,
-        location_name: v.current_location?.name || 'Ubicación no registrada',
-        location_type: v.current_location?.type || '',
-        victim_status: v.status,
-        is_minor: v.is_minor,
-        has_name: !!v.name,
-        name_hint: v.name ? v.name.split(' ')[0] + '…' : undefined,
-      }))
-      setResults(matches)
+      setResults((data || []) as PublicSearchMatch[])
     }
 
     setSearchCount(c => c + 1)
@@ -93,9 +77,9 @@ export default function BusquedaFamiliar() {
       return
     }
 
-    // Upload ID document
+    // Bucket privado: solo guardamos el path, nunca una URL pública.
     const ext = idFile.name.split('.').pop()
-    const path = `access-docs/${user.id}/${Date.now()}.${ext}`
+    const path = `${user.id}/${Date.now()}.${ext}`
     const { error: uploadError } = await supabase.storage.from('access-docs').upload(path, idFile)
     if (uploadError) {
       setSolicitudError('Error al subir documento: ' + uploadError.message)
@@ -103,12 +87,13 @@ export default function BusquedaFamiliar() {
       return
     }
 
-    const { data: urlData } = supabase.storage.from('access-docs').getPublicUrl(path)
-
+    // Esta búsqueda pública nunca devuelve menores (is_minor = false en el
+    // RPC), así que la persona solicitada siempre debería tener cédula.
     const { error: insertError } = await supabase.from('access_requests').insert({
       family_user_id: user.id,
       victim_id: solicitud.victimId,
-      id_document_url: urlData.publicUrl,
+      id_document_url: path,
+      id_document_type: 'cedula',
       relationship_description: relationship,
     })
 
@@ -120,6 +105,50 @@ export default function BusquedaFamiliar() {
 
     setSolicitudSuccess(true)
     setSolicitudLoading(false)
+  }
+
+  async function handleMenorSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!menorDocFile) return
+    setMenorLoading(true)
+    setMenorError('')
+
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+      setMenorError('Debes iniciar sesión para reportar un menor. Esto nos permite verificar quién pregunta, dado el riesgo de tráfico de menores.')
+      setMenorLoading(false)
+      return
+    }
+
+    // Reutiliza el bucket privado access-docs (solo admin lo lee) para
+    // probar parentesco antes de que cualquier admin actúe sobre el caso.
+    const ext = menorDocFile.name.split('.').pop()
+    const path = `${user.id}/menor-${Date.now()}.${ext}`
+    const { error: uploadError } = await supabase.storage.from('access-docs').upload(path, menorDocFile)
+    if (uploadError) {
+      setMenorError('Error al subir el documento: ' + uploadError.message)
+      setMenorLoading(false)
+      return
+    }
+
+    const { error } = await supabase.from('minor_inquiries').insert({
+      reporter_user_id: user.id,
+      reporter_name: menorNombre.trim(),
+      reporter_contact: menorContacto.trim(),
+      description: menorDescripcion.trim(),
+      id_document_url: path,
+    })
+
+    if (error) {
+      setMenorError('Error al enviar el reporte: ' + error.message)
+      setMenorLoading(false)
+      return
+    }
+
+    setMenorSuccess(true)
+    setMenorLoading(false)
   }
 
   return (
@@ -136,11 +165,12 @@ export default function BusquedaFamiliar() {
       <main className="flex-1 max-w-2xl mx-auto w-full px-4 py-8">
         <h1 className="text-2xl font-bold text-gray-900 mb-2">Buscar a un familiar</h1>
         <p className="text-sm text-gray-500 mb-8">
-          Busca por nombre completo o características físicas. Los resultados muestran el hospital o refugio donde está la persona,
-          sin revelar fotos ni información detallada. Para ver el perfil completo, necesitarás verificar tu identidad.
+          Busca por nombre completo o características físicas. Por seguridad, solo confirmamos si hay una
+          coincidencia y en qué hospital o refugio está, junto con su estado de salud — sin mostrar fotos, nombre
+          completo ni otros datos. Para más información, deberás verificar tu identidad y tu parentesco.
         </p>
 
-        <form onSubmit={handleSearch} className="flex gap-2 mb-6">
+        <form onSubmit={handleSearch} className="flex gap-2 mb-2">
           <input
             type="text"
             value={query}
@@ -157,6 +187,19 @@ export default function BusquedaFamiliar() {
             {loading ? '…' : 'Buscar'}
           </button>
         </form>
+        <p className="text-xs text-gray-400 mb-6">
+          ¿Buscas a un niño o niña?{' '}
+          <button type="button" onClick={() => setShowMenorForm(true)} className="text-red-600 hover:underline font-medium">
+            Los menores no aparecen aquí, reporta el caso directamente
+          </button>
+          .
+        </p>
+
+        {searchError && (
+          <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-lg mb-4">
+            {searchError}
+          </div>
+        )}
 
         {searchCount >= 5 && (
           <div className="bg-amber-50 border border-amber-200 text-amber-800 text-sm px-4 py-3 rounded-lg mb-4">
@@ -188,20 +231,15 @@ export default function BusquedaFamiliar() {
                           <span className="text-lg">{match.location_type === 'hospital' ? '🏥' : '🏕️'}</span>
                           <span className="font-medium text-gray-900">{match.location_name}</span>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[match.victim_status]}`}>
-                            {STATUS_LABELS[match.victim_status]}
-                          </span>
-                          {match.has_name && match.name_hint && (
-                            <span className="text-xs text-gray-400">Nombre: {match.name_hint}</span>
-                          )}
-                        </div>
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[match.victim_status]}`}>
+                          {STATUS_LABELS[match.victim_status]}
+                        </span>
                       </div>
                       <button
                         onClick={() => setSolicitud({ victimId: match.victim_id, locationName: match.location_name })}
                         className="shrink-0 text-sm bg-gray-900 hover:bg-gray-800 text-white px-4 py-2 rounded-lg transition-colors"
                       >
-                        Ver detalles
+                        Solicitar acceso
                       </button>
                     </div>
                   ))}
@@ -269,7 +307,7 @@ export default function BusquedaFamiliar() {
                       onChange={e => setIdFile(e.target.files?.[0] || null)}
                       className="w-full text-sm text-gray-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200"
                     />
-                    <p className="text-xs text-gray-400 mt-1">Solo visible para administradores. Se elimina tras verificación.</p>
+                    <p className="text-xs text-gray-400 mt-1">Solo visible para administradores, mediante enlace temporal.</p>
                   </div>
 
                   {solicitudError && (
@@ -289,6 +327,122 @@ export default function BusquedaFamiliar() {
                     <button
                       type="button"
                       onClick={() => setSolicitud(null)}
+                      className="border border-gray-300 text-gray-700 px-4 py-2.5 rounded-lg text-sm hover:bg-gray-50 transition-colors"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                </form>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Reporte de menor (sin búsqueda/matching automático) */}
+      {showMenorForm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
+          <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-xl">
+            {menorSuccess ? (
+              <div className="text-center py-4">
+                <div className="text-4xl mb-3">📋</div>
+                <h2 className="text-xl font-bold text-gray-900 mb-2">Reporte enviado</h2>
+                <p className="text-sm text-gray-600 mb-6">
+                  Un administrador revisará el caso manualmente contra los menores registrados y te contactará.
+                </p>
+                <button
+                  onClick={() => { setShowMenorForm(false); setMenorSuccess(false); setMenorNombre(''); setMenorContacto(''); setMenorDescripcion(''); setMenorDocFile(null) }}
+                  className="bg-gray-900 text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors"
+                >
+                  Cerrar
+                </button>
+              </div>
+            ) : (
+              <>
+                <div className="flex items-start justify-between mb-4">
+                  <div>
+                    <h2 className="text-lg font-bold text-gray-900">Reportar búsqueda de un menor</h2>
+                    <p className="text-sm text-gray-500 mt-0.5">No hacemos búsqueda automática de menores por seguridad.</p>
+                  </div>
+                  <button onClick={() => setShowMenorForm(false)} className="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
+                </div>
+
+                <div className="bg-purple-50 border border-purple-200 text-purple-800 text-xs px-3 py-2 rounded-lg mb-4">
+                  Ante el riesgo de tráfico de menores, necesitamos verificar tu identidad y parentesco antes de
+                  que un administrador revise tu caso manualmente y se ponga en contacto contigo directamente.
+                </div>
+
+                <form onSubmit={handleMenorSubmit} className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Tu nombre</label>
+                    <input
+                      type="text"
+                      required
+                      value={menorNombre}
+                      onChange={e => setMenorNombre(e.target.value)}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Tu teléfono o correo de contacto</label>
+                    <input
+                      type="text"
+                      required
+                      value={menorContacto}
+                      onChange={e => setMenorContacto(e.target.value)}
+                      placeholder="Para que el administrador pueda contactarte"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Describe al menor que buscas</label>
+                    <textarea
+                      required
+                      rows={3}
+                      value={menorDescripcion}
+                      onChange={e => setMenorDescripcion(e.target.value)}
+                      placeholder="Nombre, edad aproximada, características físicas, dónde se le vio por última vez…"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Tu cédula o acta de nacimiento del menor <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="file"
+                      required
+                      accept="image/*"
+                      capture="environment"
+                      onChange={e => setMenorDocFile(e.target.files?.[0] || null)}
+                      className="w-full text-sm text-gray-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200"
+                    />
+                    <p className="text-xs text-gray-400 mt-1">
+                      Prueba tu parentesco con el menor. Necesitas iniciar sesión para reportar — solo visible para
+                      administradores, mediante enlace temporal.
+                    </p>
+                  </div>
+
+                  {menorError && (
+                    <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-3 py-2 rounded-lg">
+                      {menorError}
+                    </div>
+                  )}
+
+                  <div className="flex gap-3 pt-1">
+                    <button
+                      type="submit"
+                      disabled={menorLoading || !menorDocFile}
+                      className="flex-1 bg-red-600 hover:bg-red-700 disabled:opacity-60 text-white font-medium py-2.5 rounded-lg text-sm transition-colors"
+                    >
+                      {menorLoading ? 'Enviando…' : 'Enviar reporte'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowMenorForm(false)}
                       className="border border-gray-300 text-gray-700 px-4 py-2.5 rounded-lg text-sm hover:bg-gray-50 transition-colors"
                     >
                       Cancelar
