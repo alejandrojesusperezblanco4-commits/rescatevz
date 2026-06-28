@@ -44,6 +44,7 @@ CREATE TABLE public.victims (
   id                   UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
   created_by           UUID REFERENCES public.profiles(id) NOT NULL,
   name                 TEXT,                 -- puede ser NULL si se desconoce
+  cedula               TEXT,                 -- cédula venezolana (V/E + número); NULL si no se conoce
   physical_description TEXT NOT NULL,
   estimated_age        INTEGER,
   is_minor             BOOLEAN NOT NULL DEFAULT FALSE,
@@ -56,6 +57,9 @@ CREATE TABLE public.victims (
   created_at           TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at           TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- Impide cédulas duplicadas; permite múltiples registros sin cédula (NULL)
+CREATE UNIQUE INDEX victims_cedula_unique ON public.victims (cedula) WHERE cedula IS NOT NULL;
 
 -- Solicitudes de familias para ver perfil completo de una víctima
 CREATE TABLE public.access_requests (
@@ -320,3 +324,7 @@ CREATE POLICY IF NOT EXISTS "locations: rescatista registra derrumbe"
     public.is_verified_staff()
     AND type = 'collapsed_building'
   );
+
+-- Control de cédulas duplicadas
+ALTER TABLE public.victims ADD COLUMN IF NOT EXISTS cedula TEXT;
+CREATE UNIQUE INDEX IF NOT EXISTS victims_cedula_unique ON public.victims (cedula) WHERE cedula IS NOT NULL;
