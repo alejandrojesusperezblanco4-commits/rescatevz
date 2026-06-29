@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import './globals.css'
+import ChatWidget from '@/components/ChatWidget'
 
 export const metadata: Metadata = {
   title: 'RescateVZ — Registro de víctimas',
@@ -16,6 +17,7 @@ export default function RootLayout({
     <html lang="es" className="h-full">
       <body className="min-h-full flex flex-col bg-gray-50 text-gray-900">
         {children}
+        <ChatWidget />
       </body>
     </html>
   )

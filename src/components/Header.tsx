@@ -31,6 +31,7 @@ export default function Header({ profile }: HeaderProps) {
     { href: '/mis-solicitudes', label: 'Mis solicitudes', roles: ['family'] },
     { href: '/verificacion', label: 'Verificar staff', roles: ['admin'] },
     { href: '/ubicaciones', label: 'Ubicaciones', roles: ['admin'] },
+    { href: '/admin/importar', label: 'Importar CSV', roles: ['admin'] },
     { href: '/solicitudes', label: 'Solicitudes', roles: ['admin'] },
     { href: '/menores', label: 'Reportes de menores', roles: ['admin'] },
   ] as const

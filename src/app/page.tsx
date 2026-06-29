@@ -1,98 +1,194 @@
 import Link from 'next/link'
+import { createClient } from '@/lib/supabase/server'
+import StatsCounter from '@/components/StatsCounter'
 
-export default function LandingPage() {
+export default async function LandingPage() {
+  const supabase = await createClient()
+  const [
+    { count: totalVictims },
+    { count: alive },
+    { count: locations },
+    { count: minors },
+  ] = await Promise.all([
+    supabase.from('victims').select('*', { count: 'exact', head: true }),
+    supabase.from('victims').select('*', { count: 'exact', head: true }).eq('status', 'alive'),
+    supabase.from('locations').select('*', { count: 'exact', head: true }).eq('is_active', true),
+    supabase.from('victims').select('*', { count: 'exact', head: true }).eq('is_minor', true),
+  ])
+
+  const stats = [
+    { label: 'Víctimas registradas', value: totalVictims || 0, color: 'text-white' },
+    { label: 'Con vida confirmada', value: alive || 0, color: 'text-green-400' },
+    { label: 'Centros activos', value: locations || 0, color: 'text-blue-400' },
+    { label: 'Menores protegidos', value: minors || 0, color: 'text-yellow-400' },
+  ]
+
   return (
-    <div className="min-h-screen flex flex-col">
-      {/* Emergency banner */}
-      <div className="bg-red-600 text-white text-center py-2 text-sm font-medium px-4">
-        Emergencia activa — Terremotos Venezuela 24 de junio 2026
+    <div className="min-h-screen flex flex-col" style={{ background: '#0D1117', color: '#FFFFFF' }}>
+      {/* Franja bandera venezolana */}
+      <div className="flex h-1 w-full">
+        <div className="flex-1" style={{ background: '#FFD700' }} />
+        <div className="flex-1" style={{ background: '#003893' }} />
+        <div className="flex-1" style={{ background: '#CF142B' }} />
+      </div>
+
+      {/* Banner emergencia */}
+      <div className="text-center py-2 text-xs font-semibold tracking-widest uppercase px-4"
+        style={{ background: '#CF142B', color: '#FFFFFF' }}>
+        🚨 Emergencia activa — Terremotos Venezuela 24 jun 2026 — +50.000 desaparecidos
       </div>
 
       {/* Header */}
-      <header className="bg-gray-900 text-white px-6 py-4 flex items-center justify-between">
+      <header className="px-4 sm:px-8 py-4 flex items-center justify-between border-b border-white/10">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-red-600 rounded-full flex items-center justify-center font-bold text-sm">
+          <div className="w-9 h-9 rounded-full flex items-center justify-center font-black text-sm text-white"
+            style={{ background: '#CF142B' }}>
             RV
           </div>
-          <span className="font-bold text-lg">RescateVZ</span>
+          <span className="font-bold text-lg tracking-tight">RescateVZ</span>
+          <span className="hidden sm:block text-xs text-gray-500 border border-gray-700 px-2 py-0.5 rounded-full">
+            Venezuela 2026
+          </span>
         </div>
-        <div className="flex gap-3">
-          <Link href="/login" className="text-sm text-gray-300 hover:text-white transition-colors">
-            Iniciar sesión
+        <div className="flex items-center gap-2">
+          <Link href="/guia" className="hidden sm:block text-sm text-gray-400 hover:text-white transition-colors px-3 py-1.5">
+            Guía
           </Link>
-          <Link href="/registro" className="text-sm bg-red-600 hover:bg-red-700 px-3 py-1.5 rounded font-medium transition-colors">
+          <Link href="/login" className="text-sm text-gray-300 hover:text-white transition-colors px-3 py-1.5">
+            Entrar
+          </Link>
+          <Link href="/registro"
+            className="text-sm font-semibold px-4 py-2 rounded-lg transition-all hover:brightness-110"
+            style={{ background: '#CF142B', color: '#FFFFFF' }}>
             Registrarse
           </Link>
         </div>
       </header>
 
       {/* Hero */}
-      <main className="flex-1 flex flex-col items-center justify-center px-4 py-16 text-center">
-        <div className="max-w-2xl w-full">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">
-            Conectamos familias con sus seres queridos
+      <main className="flex-1 flex flex-col">
+        {/* Hero section */}
+        <section className="flex flex-col items-center justify-center text-center px-4 pt-16 pb-12">
+          {/* Estrella de Venezuela sutil */}
+          <div className="text-5xl mb-6 opacity-80">⭐</div>
+
+          <h1 className="text-4xl sm:text-5xl md:text-6xl font-black leading-tight mb-4 max-w-3xl">
+            Venezuela,{' '}
+            <span style={{ color: '#FFD700' }}>te buscamos</span>
           </h1>
-          <p className="text-xl text-gray-600 mb-12">
-            Plataforma segura para registrar víctimas rescatadas, localizar hospitales y refugios, y reunir familias.
+          <p className="text-lg sm:text-xl text-gray-400 mb-12 max-w-xl">
+            Plataforma segura para registrar víctimas, localizar hospitales y reunir familias separadas por el terremoto.
           </p>
 
-          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-            <Link
+          {/* Stats en tiempo real */}
+          <div className="w-full max-w-3xl mb-16">
+            <StatsCounter stats={stats} />
+          </div>
+
+          {/* Tarjetas de acceso */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 w-full max-w-4xl">
+            <ActionCard
               href="/registro?rol=rescuer"
-              className="bg-red-600 hover:bg-red-700 text-white rounded-xl p-6 text-left transition-colors"
-            >
-              <div className="text-3xl mb-3">🦺</div>
-              <h2 className="font-bold text-lg mb-1">Soy rescatista</h2>
-              <p className="text-red-100 text-sm">Registra personas rescatadas con foto e información médica</p>
-            </Link>
-
-            <Link
+              icon="🦺"
+              title="Soy rescatista"
+              desc="Registra víctimas rescatadas desde campo"
+              accent="#CF142B"
+            />
+            <ActionCard
               href="/buscar"
-              className="bg-white hover:bg-gray-50 border-2 border-gray-200 hover:border-red-300 text-gray-900 rounded-xl p-6 text-left transition-colors"
-            >
-              <div className="text-3xl mb-3">🔍</div>
-              <h2 className="font-bold text-lg mb-1">Busco a alguien</h2>
-              <p className="text-gray-500 text-sm">Encuentra a un familiar entre los registrados en hospitales y refugios</p>
-            </Link>
-
-            <Link
+              icon="🔍"
+              title="Busco a alguien"
+              desc="Encuentra a un familiar en hospitales y refugios"
+              accent="#003893"
+            />
+            <ActionCard
               href="/mapa-publico"
-              className="bg-white hover:bg-gray-50 border-2 border-gray-200 hover:border-blue-300 text-gray-900 rounded-xl p-6 text-left transition-colors"
-            >
-              <div className="text-3xl mb-3">🗺️</div>
-              <h2 className="font-bold text-lg mb-1">Ver el mapa</h2>
-              <p className="text-gray-500 text-sm">Hospitales y refugios activos con capacidad disponible</p>
-            </Link>
-
-            <Link
+              icon="🗺️"
+              title="Ver el mapa"
+              desc="Hospitales y refugios activos con capacidad"
+              accent="#1D4ED8"
+            />
+            <ActionCard
               href="/primeros-auxilios"
-              className="bg-white hover:bg-gray-50 border-2 border-gray-200 hover:border-green-300 text-gray-900 rounded-xl p-6 text-left transition-colors"
-            >
-              <div className="text-3xl mb-3">🩺</div>
-              <h2 className="font-bold text-lg mb-1">Primeros auxilios</h2>
-              <p className="text-gray-500 text-sm">Guías paso a paso. Funciona sin internet</p>
-            </Link>
+              icon="🩺"
+              title="Primeros auxilios"
+              desc="Protocolos offline: RCP, hemorragias, shock…"
+              accent="#16A34A"
+            />
           </div>
+        </section>
 
-          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4 text-sm text-gray-400">
-            <span>
-              ¿Eres médico o enfermero?{' '}
-              <Link href="/registro?rol=medical" className="text-red-600 hover:underline font-medium">
-                Registrarse como personal médico
-              </Link>
-            </span>
-            <span className="hidden sm:block text-gray-300">·</span>
-            <Link href="/guia" className="text-gray-500 hover:text-gray-700 hover:underline">
-              📖 Guía de uso
-            </Link>
+        {/* Franja informativa */}
+        <section className="border-t border-white/10 py-10 px-4">
+          <div className="max-w-4xl mx-auto grid grid-cols-1 sm:grid-cols-3 gap-6 text-center">
+            <InfoBlock
+              icon="🔒"
+              title="Privacidad ante todo"
+              desc="Los menores están ocultos al público. El acceso a fotos requiere verificación de identidad."
+            />
+            <InfoBlock
+              icon="📵"
+              title="Funciona sin internet"
+              desc="Las guías de primeros auxilios y el mapa se cachean localmente para usarse en campo."
+            />
+            <InfoBlock
+              icon="💬"
+              title="Bot de WhatsApp"
+              desc="Registra víctimas enviando un mensaje de voz. Nuestro agente IA extrae los datos automáticamente."
+            />
           </div>
-        </div>
+        </section>
       </main>
 
-      <footer className="bg-gray-900 text-gray-400 text-center py-4 text-xs">
-        <p>RescateVZ — Plataforma humanitaria sin fines de lucro · Venezuela 2026</p>
-        <p className="mt-1">Los datos de menores están protegidos y solo accesibles por personal autorizado.</p>
+      {/* Footer */}
+      <footer className="border-t border-white/10 py-6 px-4 text-center">
+        <div className="flex items-center justify-center gap-2 mb-2">
+          <div className="flex h-0.5 w-6">
+            <div className="flex-1" style={{ background: '#FFD700' }} />
+            <div className="flex-1" style={{ background: '#003893' }} />
+            <div className="flex-1" style={{ background: '#CF142B' }} />
+          </div>
+          <span className="text-xs text-gray-500">RescateVZ — Plataforma humanitaria · Venezuela 2026</span>
+          <div className="flex h-0.5 w-6">
+            <div className="flex-1" style={{ background: '#CF142B' }} />
+            <div className="flex-1" style={{ background: '#003893' }} />
+            <div className="flex-1" style={{ background: '#FFD700' }} />
+          </div>
+        </div>
+        <p className="text-xs text-gray-600">
+          Los datos de menores son confidenciales y solo accesibles por personal autorizado.{' '}
+          <Link href="/guia" className="hover:text-gray-400 underline">Guía de uso</Link>
+          {' · '}
+          <Link href="/whatsapp" className="hover:text-gray-400 underline">Bot WhatsApp</Link>
+        </p>
       </footer>
+    </div>
+  )
+}
+
+function ActionCard({ href, icon, title, desc, accent }: {
+  href: string; icon: string; title: string; desc: string; accent: string
+}) {
+  return (
+    <Link
+      href={href}
+      className="group flex flex-col text-left p-5 rounded-xl border border-white/10 transition-all hover:border-white/30 hover:scale-[1.02]"
+      style={{ background: 'rgba(255,255,255,0.03)' }}
+    >
+      <div className="text-3xl mb-3">{icon}</div>
+      <h2 className="font-bold text-base mb-1 text-white">{title}</h2>
+      <p className="text-xs text-gray-400 leading-relaxed">{desc}</p>
+      <div className="mt-3 h-0.5 w-8 rounded-full transition-all group-hover:w-full" style={{ background: accent }} />
+    </Link>
+  )
+}
+
+function InfoBlock({ icon, title, desc }: { icon: string; title: string; desc: string }) {
+  return (
+    <div className="flex flex-col items-center">
+      <div className="text-3xl mb-2">{icon}</div>
+      <h3 className="font-semibold text-sm text-white mb-1">{title}</h3>
+      <p className="text-xs text-gray-500 leading-relaxed max-w-xs">{desc}</p>
     </div>
   )
 }
