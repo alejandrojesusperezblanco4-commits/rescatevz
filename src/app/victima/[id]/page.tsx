@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import Header from '@/components/Header'
 import type { Profile } from '@/lib/types'
 import { STATUS_LABELS, STATUS_COLORS, type VictimStatus } from '@/lib/types'
+import ActualizarVictimaForm from '@/components/ActualizarVictimaForm'
 
 export default async function VictimaPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -18,12 +19,14 @@ export default async function VictimaPage({ params }: { params: Promise<{ id: st
 
   // RLS decide si esta fila existe para este usuario: staff autorizado, o
   // un familiar con access_request aprobado y vigente para esta víctima.
+  const canUpdate = ['admin', 'medical'].includes(profile.role)
+
   const { data: victim, error } = await supabase
     .from('victims')
     .select(`
-      id, name, physical_description, is_minor, status,
-      found_location, notes, photo_urls,
-      current_location:locations(name, type, address, phone)
+      id, name, physical_description, is_minor, status, estimated_age,
+      found_location, notes, photo_urls, current_location_id,
+      current_location:locations(id, name, type, address, phone)
     `)
     .eq('id', id)
     .single()
@@ -44,7 +47,13 @@ export default async function VictimaPage({ params }: { params: Promise<{ id: st
 
   const rawLocation = victim.current_location
   const location = (Array.isArray(rawLocation) ? rawLocation[0] : rawLocation) as
-    { name: string; type: string; address: string | null; phone: string | null } | null
+    { id: string; name: string; type: string; address: string | null; phone: string | null } | null
+
+  let locations: { id: string; name: string; type: string }[] = []
+  if (canUpdate) {
+    const { data } = await supabase.from('locations').select('id, name, type').eq('is_active', true).order('type')
+    locations = data || []
+  }
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -54,7 +63,12 @@ export default async function VictimaPage({ params }: { params: Promise<{ id: st
       <Header profile={profile as Profile} />
 
       <main className="flex-1 max-w-2xl mx-auto w-full px-4 py-8">
-        <Link href="/mis-solicitudes" className="text-sm text-red-600 hover:underline">← Mis solicitudes</Link>
+        <Link
+          href={profile.role === 'family' ? '/mis-solicitudes' : '/victimas'}
+          className="text-sm text-red-600 hover:underline"
+        >
+          ← {profile.role === 'family' ? 'Mis solicitudes' : 'Lista de víctimas'}
+        </Link>
 
         <div className="bg-white rounded-xl border border-gray-200 p-6 mt-4">
           <div className="flex items-center justify-between mb-4">
@@ -96,13 +110,36 @@ export default async function VictimaPage({ params }: { params: Promise<{ id: st
                 </dd>
               </div>
             )}
+            {victim.estimated_age && (
+              <div>
+                <dt className="text-gray-500">Edad estimada</dt>
+                <dd className="text-gray-900">{victim.estimated_age} años</dd>
+              </div>
+            )}
+            {victim.is_minor && (
+              <div>
+                <dt className="text-gray-500">Protección</dt>
+                <dd><span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded font-medium">Menor de edad</span></dd>
+              </div>
+            )}
             {victim.notes && (
               <div>
-                <dt className="text-gray-500">Notas</dt>
+                <dt className="text-gray-500">Notas médicas</dt>
                 <dd className="text-gray-900">{victim.notes}</dd>
               </div>
             )}
           </dl>
+
+          {canUpdate && (
+            <ActualizarVictimaForm
+              victimId={victim.id}
+              currentStatus={victim.status as VictimStatus}
+              currentLocationId={victim.current_location_id}
+              currentNotes={victim.notes}
+              locations={locations}
+              userId={user.id}
+            />
+          )}
         </div>
       </main>
     </div>
