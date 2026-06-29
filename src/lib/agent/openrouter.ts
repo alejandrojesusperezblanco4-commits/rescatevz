@@ -1,5 +1,5 @@
 const BASE_URL = 'https://openrouter.ai/api/v1'
-const MODEL = 'anthropic/claude-3-5-haiku'
+const MODEL = 'anthropic/claude-3.5-haiku'
 
 export interface Message {
   role: 'system' | 'user' | 'assistant'
