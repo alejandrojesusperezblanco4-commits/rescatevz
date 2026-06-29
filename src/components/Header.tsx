@@ -30,6 +30,7 @@ export default function Header({ profile }: HeaderProps) {
     { href: '/primeros-auxilios', label: 'Primeros auxilios', roles: ['admin', 'rescuer', 'medical', 'family'] },
     { href: '/mis-solicitudes', label: 'Mis solicitudes', roles: ['family'] },
     { href: '/verificacion', label: 'Verificar staff', roles: ['admin'] },
+    { href: '/ubicaciones', label: 'Ubicaciones', roles: ['admin'] },
     { href: '/solicitudes', label: 'Solicitudes', roles: ['admin'] },
     { href: '/menores', label: 'Reportes de menores', roles: ['admin'] },
   ] as const
