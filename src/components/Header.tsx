@@ -23,6 +23,7 @@ export default function Header({ profile }: HeaderProps) {
 
   const nav = [
     { href: '/dashboard', label: 'Inicio', roles: ['admin', 'rescuer', 'medical', 'family'] },
+    { href: '/victimas', label: 'Víctimas', roles: ['admin', 'rescuer', 'medical'] },
     { href: '/victimas/nueva', label: 'Registrar víctima', roles: ['admin', 'rescuer', 'medical'] },
     { href: '/buscar', label: 'Buscar familiar', roles: ['admin', 'rescuer', 'medical', 'family'] },
     { href: '/mapa-publico', label: 'Mapa', roles: ['admin', 'rescuer', 'medical', 'family'] },
