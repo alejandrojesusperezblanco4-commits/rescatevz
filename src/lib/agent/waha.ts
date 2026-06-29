@@ -25,7 +25,7 @@ export async function sendMessage(to: string, text: string): Promise<void> {
     body: JSON.stringify({
       chatId,
       text,
-      session: 'default',
+      session: 'Default',
     }),
   })
 }
