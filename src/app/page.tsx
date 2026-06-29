@@ -74,12 +74,18 @@ export default function LandingPage() {
             </Link>
           </div>
 
-          <p className="mt-8 text-sm text-gray-400">
-            ¿Eres médico o enfermero?{' '}
-            <Link href="/registro?rol=medical" className="text-red-600 hover:underline font-medium">
-              Registrarse como personal médico
+          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4 text-sm text-gray-400">
+            <span>
+              ¿Eres médico o enfermero?{' '}
+              <Link href="/registro?rol=medical" className="text-red-600 hover:underline font-medium">
+                Registrarse como personal médico
+              </Link>
+            </span>
+            <span className="hidden sm:block text-gray-300">·</span>
+            <Link href="/guia" className="text-gray-500 hover:text-gray-700 hover:underline">
+              📖 Guía de uso
             </Link>
-          </p>
+          </div>
         </div>
       </main>
 
