@@ -21,15 +21,15 @@ export default function Header({ profile }: HeaderProps) {
     router.refresh()
   }
 
-  // Curated nav — max 5 items visible. Secondary links live in the dashboard.
   const nav = [
-    { href: '/dashboard',      label: 'Dashboard',  roles: ['admin', 'rescuer', 'medical', 'family'] },
-    { href: '/victimas',       label: 'Víctimas',   roles: ['admin', 'rescuer', 'medical'] },
-    { href: '/buscar',         label: 'Buscar',     roles: ['admin', 'rescuer', 'medical', 'family'] },
-    { href: '/mapa-publico',   label: 'Mapa',       roles: ['admin', 'rescuer', 'medical', 'family'] },
-    { href: '/solicitudes',    label: 'Solicitudes',roles: ['admin'] },
-    { href: '/verificacion',   label: 'Verificar',  roles: ['admin'] },
-    { href: '/mis-solicitudes',label: 'Mis solicitudes', roles: ['family'] },
+    { href: '/dashboard',       label: 'Dashboard',    roles: ['admin', 'rescuer', 'medical', 'family', 'engineer'] },
+    { href: '/victimas',        label: 'Víctimas',     roles: ['admin', 'rescuer', 'medical'] },
+    { href: '/estructuras',     label: 'Estructuras',  roles: ['admin', 'engineer', 'rescuer', 'medical'] },
+    { href: '/buscar',          label: 'Buscar',       roles: ['admin', 'rescuer', 'medical', 'family', 'engineer'] },
+    { href: '/mapa-publico',    label: 'Mapa',         roles: ['admin', 'rescuer', 'medical', 'family', 'engineer'] },
+    { href: '/solicitudes',     label: 'Solicitudes',  roles: ['admin'] },
+    { href: '/verificacion',    label: 'Verificar',    roles: ['admin'] },
+    { href: '/mis-solicitudes', label: 'Mis solicitudes', roles: ['family'] },
   ] as const
 
   const visibleNav = nav.filter(n => (n.roles as readonly string[]).includes(profile.role))

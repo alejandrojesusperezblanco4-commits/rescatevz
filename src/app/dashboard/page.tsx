@@ -20,6 +20,7 @@ export default async function DashboardPage() {
     { count: minors },
     { count: pendingSolicitudes },
     { count: pendingStaff },
+    { count: pendingStructures },
     { data: recentVictims },
     { data: locations },
   ] = await Promise.all([
@@ -32,7 +33,10 @@ export default async function DashboardPage() {
       ? supabase.from('access_requests').select('*', { count: 'exact', head: true }).eq('status', 'pending')
       : Promise.resolve({ count: 0 }),
     profile.role === 'admin'
-      ? supabase.from('profiles').select('*', { count: 'exact', head: true }).in('role', ['rescuer', 'medical']).eq('is_verified', false)
+      ? supabase.from('profiles').select('*', { count: 'exact', head: true }).in('role', ['rescuer', 'medical', 'engineer']).eq('is_verified', false)
+      : Promise.resolve({ count: 0 }),
+    (profile.role === 'admin' || profile.role === 'engineer')
+      ? supabase.from('structures').select('*', { count: 'exact', head: true }).eq('habitability', 'pending')
       : Promise.resolve({ count: 0 }),
     supabase.from('victims').select('id, name, status, is_minor, created_at').order('created_at', { ascending: false }).limit(6),
     supabase.from('locations').select('id, name, type, current_occupancy, capacity').eq('is_active', true).order('type').limit(6),

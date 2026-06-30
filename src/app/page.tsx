@@ -61,16 +61,16 @@ export default async function LandingPage() {
               </Link>
             </div>
           </div>
-          <div className="flex gap-4">
+          <div className="flex gap-3">
             <Link href="/login"
-              className="hidden md:block px-4 py-2 font-bold rounded-lg transition-all hover:brightness-110"
+              className="px-4 py-2 font-bold rounded-lg transition-all hover:brightness-110"
               style={{ color: '#d8e2ff' }}>
               Iniciar sesión
             </Link>
             <Link href="/registro"
-              className="px-6 py-2 font-bold rounded-lg transition-all hover:brightness-110 active:opacity-80 uppercase"
-              style={{ background: '#D4A017', color: '#402d00', fontSize: '14px', letterSpacing: '0.02em' }}>
-              REPORTAR EMERGENCIA
+              className="px-5 py-2 font-bold rounded-lg transition-all hover:brightness-110 active:opacity-80"
+              style={{ background: '#D4A017', color: '#402d00', fontSize: '14px' }}>
+              Registrarse
             </Link>
           </div>
         </nav>

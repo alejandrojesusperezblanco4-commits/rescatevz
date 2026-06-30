@@ -153,18 +153,9 @@ export default function BusquedaFamiliar() {
 
   return (
     <>
-      {/* Header */}
-      <header className="bg-gray-900 text-white px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-red-600 rounded-full flex items-center justify-center font-bold text-sm">RV</div>
-          <span className="font-bold text-lg">RescateVZ</span>
-        </div>
-        <Link href="/" className="text-sm text-gray-400 hover:text-white transition-colors">← Inicio</Link>
-      </header>
-
-      <main className="flex-1 max-w-2xl mx-auto w-full px-4 py-8">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Buscar a un familiar</h1>
-        <p className="text-sm text-gray-500 mb-8">
+      <div className="max-w-2xl mx-auto w-full px-4 py-8">
+        <h1 className="text-2xl font-bold text-white mb-2">Buscar a un familiar</h1>
+        <p className="text-sm text-gray-400 mb-8">
           Busca por nombre completo o características físicas. Por seguridad, solo confirmamos si hay una
           coincidencia y en qué hospital o refugio está, junto con su estado de salud — sin mostrar fotos, nombre
           completo ni otros datos. Para más información, deberás verificar tu identidad y tu parentesco.
@@ -177,32 +168,33 @@ export default function BusquedaFamiliar() {
             onChange={e => setQuery(e.target.value)}
             placeholder="Nombre, apellido o descripción física…"
             minLength={3}
-            className="flex-1 border border-gray-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+            className="flex-1 bg-white/5 border border-white/15 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#CF142B] focus:border-transparent"
           />
           <button
             type="submit"
             disabled={loading || searchCount >= 5 || query.trim().length < 3}
-            className="bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white px-5 py-3 rounded-lg text-sm font-medium transition-colors"
+            className="text-white px-5 py-3 rounded-lg text-sm font-medium transition-all hover:brightness-110 disabled:opacity-50"
+            style={{ background: '#CF142B' }}
           >
             {loading ? '…' : 'Buscar'}
           </button>
         </form>
-        <p className="text-xs text-gray-400 mb-6">
+        <p className="text-xs text-gray-500 mb-6">
           ¿Buscas a un niño o niña?{' '}
-          <button type="button" onClick={() => setShowMenorForm(true)} className="text-red-600 hover:underline font-medium">
+          <button type="button" onClick={() => setShowMenorForm(true)} className="text-red-400 hover:text-red-300 font-medium">
             Los menores no aparecen aquí, reporta el caso directamente
           </button>
           .
         </p>
 
         {searchError && (
-          <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-lg mb-4">
+          <div className="bg-red-500/10 border border-red-500/30 text-red-300 text-sm px-4 py-3 rounded-lg mb-4">
             {searchError}
           </div>
         )}
 
         {searchCount >= 5 && (
-          <div className="bg-amber-50 border border-amber-200 text-amber-800 text-sm px-4 py-3 rounded-lg mb-4">
+          <div className="bg-amber-500/10 border border-amber-500/30 text-amber-200 text-sm px-4 py-3 rounded-lg mb-4">
             Has alcanzado el límite de búsquedas por sesión.{' '}
             <Link href="/login" className="underline font-medium">Inicia sesión</Link> para continuar.
           </div>
@@ -212,24 +204,24 @@ export default function BusquedaFamiliar() {
         {results !== null && (
           <div>
             {results.length === 0 ? (
-              <div className="text-center py-12 text-gray-400">
+              <div className="text-center py-12 text-gray-500">
                 <div className="text-4xl mb-3">🔍</div>
-                <p className="font-medium text-gray-600">No se encontraron coincidencias</p>
+                <p className="font-medium text-gray-300">No se encontraron coincidencias</p>
                 <p className="text-sm mt-1">Intenta con un nombre diferente o características físicas</p>
               </div>
             ) : (
               <div>
-                <p className="text-sm text-gray-500 mb-4">
-                  Se encontraron <strong>{results.length}</strong> coincidencia{results.length > 1 ? 's' : ''}.
+                <p className="text-sm text-gray-400 mb-4">
+                  Se encontraron <strong className="text-white">{results.length}</strong> coincidencia{results.length > 1 ? 's' : ''}.
                   Por seguridad, los detalles completos requieren verificación de identidad.
                 </p>
                 <div className="space-y-3">
                   {results.map(match => (
-                    <div key={match.victim_id} className="bg-white rounded-xl border border-gray-200 p-4 flex items-center justify-between gap-4">
+                    <div key={match.victim_id} className="rounded-xl border border-white/10 p-4 flex items-center justify-between gap-4" style={{ background: '#161B22' }}>
                       <div>
                         <div className="flex items-center gap-2 mb-1">
                           <span className="text-lg">{match.location_type === 'hospital' ? '🏥' : '🏕️'}</span>
-                          <span className="font-medium text-gray-900">{match.location_name}</span>
+                          <span className="font-medium text-white">{match.location_name}</span>
                         </div>
                         <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[match.victim_status]}`}>
                           {STATUS_LABELS[match.victim_status]}
@@ -237,7 +229,8 @@ export default function BusquedaFamiliar() {
                       </div>
                       <button
                         onClick={() => setSolicitud({ victimId: match.victim_id, locationName: match.location_name })}
-                        className="shrink-0 text-sm bg-gray-900 hover:bg-gray-800 text-white px-4 py-2 rounded-lg transition-colors"
+                        className="shrink-0 text-sm text-white px-4 py-2 rounded-lg transition-all hover:brightness-110"
+                        style={{ background: '#CF142B' }}
                       >
                         Solicitar acceso
                       </button>
@@ -248,22 +241,22 @@ export default function BusquedaFamiliar() {
             )}
           </div>
         )}
-      </main>
+      </div>
 
       {/* Modal: Solicitud de acceso */}
       {solicitud && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
-          <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-xl">
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 px-4">
+          <div className="rounded-2xl w-full max-w-md p-6 shadow-xl border border-white/10" style={{ background: '#161B22' }}>
             {solicitudSuccess ? (
               <div className="text-center py-4">
                 <div className="text-4xl mb-3">📋</div>
-                <h2 className="text-xl font-bold text-gray-900 mb-2">Solicitud enviada</h2>
-                <p className="text-sm text-gray-600 mb-6">
+                <h2 className="text-xl font-bold text-white mb-2">Solicitud enviada</h2>
+                <p className="text-sm text-gray-400 mb-6">
                   Un administrador revisará tu solicitud y te contactará. El tiempo de respuesta es inferior a 2 horas.
                 </p>
                 <button
                   onClick={() => { setSolicitud(null); setSolicitudSuccess(false) }}
-                  className="bg-gray-900 text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors"
+                  className="bg-white/10 hover:bg-white/20 text-white px-6 py-2.5 rounded-lg text-sm font-medium transition-colors"
                 >
                   Cerrar
                 </button>
@@ -272,32 +265,32 @@ export default function BusquedaFamiliar() {
               <>
                 <div className="flex items-start justify-between mb-4">
                   <div>
-                    <h2 className="text-lg font-bold text-gray-900">Solicitar acceso al perfil</h2>
-                    <p className="text-sm text-gray-500 mt-0.5">Coincidencia en: {solicitud.locationName}</p>
+                    <h2 className="text-lg font-bold text-white">Solicitar acceso al perfil</h2>
+                    <p className="text-sm text-gray-400 mt-0.5">Coincidencia en: {solicitud.locationName}</p>
                   </div>
-                  <button onClick={() => setSolicitud(null)} className="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
+                  <button onClick={() => setSolicitud(null)} className="text-gray-500 hover:text-gray-300 text-xl leading-none">×</button>
                 </div>
 
-                <div className="bg-amber-50 border border-amber-200 text-amber-800 text-xs px-3 py-2 rounded-lg mb-4">
+                <div className="bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs px-3 py-2 rounded-lg mb-4">
                   Para proteger la privacidad de las víctimas, necesitamos verificar tu identidad y parentesco.
                 </div>
 
                 <form onSubmit={handleSolicitud} className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Relación con la persona</label>
+                    <label className="block text-sm font-medium text-gray-300 mb-1">Relación con la persona</label>
                     <input
                       type="text"
                       required
                       value={relationship}
                       onChange={e => setRelationship(e.target.value)}
                       placeholder="Ej: madre, hermano, esposo/a, hijo/a…"
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                      className="w-full bg-white/5 border border-white/15 text-white placeholder-gray-500 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#CF142B] focus:border-transparent"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Foto de tu cédula de identidad <span className="text-red-500">*</span>
+                    <label className="block text-sm font-medium text-gray-300 mb-1">
+                      Foto de tu cédula de identidad <span className="text-red-400">*</span>
                     </label>
                     <input
                       type="file"
@@ -305,13 +298,13 @@ export default function BusquedaFamiliar() {
                       accept="image/*"
                       capture="environment"
                       onChange={e => setIdFile(e.target.files?.[0] || null)}
-                      className="w-full text-sm text-gray-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200"
+                      className="w-full text-sm text-gray-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-white/10 file:text-gray-200 hover:file:bg-white/20"
                     />
-                    <p className="text-xs text-gray-400 mt-1">Solo visible para administradores, mediante enlace temporal.</p>
+                    <p className="text-xs text-gray-500 mt-1">Solo visible para administradores, mediante enlace temporal.</p>
                   </div>
 
                   {solicitudError && (
-                    <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-3 py-2 rounded-lg">
+                    <div className="bg-red-500/10 border border-red-500/30 text-red-300 text-sm px-3 py-2 rounded-lg">
                       {solicitudError}
                     </div>
                   )}
@@ -320,14 +313,15 @@ export default function BusquedaFamiliar() {
                     <button
                       type="submit"
                       disabled={solicitudLoading || !idFile}
-                      className="flex-1 bg-red-600 hover:bg-red-700 disabled:opacity-60 text-white font-medium py-2.5 rounded-lg text-sm transition-colors"
+                      className="flex-1 text-white font-medium py-2.5 rounded-lg text-sm transition-all hover:brightness-110 disabled:opacity-60"
+                      style={{ background: '#CF142B' }}
                     >
                       {solicitudLoading ? 'Enviando…' : 'Enviar solicitud'}
                     </button>
                     <button
                       type="button"
                       onClick={() => setSolicitud(null)}
-                      className="border border-gray-300 text-gray-700 px-4 py-2.5 rounded-lg text-sm hover:bg-gray-50 transition-colors"
+                      className="border border-white/15 text-gray-200 px-4 py-2.5 rounded-lg text-sm hover:bg-white/5 transition-colors"
                     >
                       Cancelar
                     </button>
@@ -341,18 +335,18 @@ export default function BusquedaFamiliar() {
 
       {/* Modal: Reporte de menor (sin búsqueda/matching automático) */}
       {showMenorForm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
-          <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-xl">
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 px-4">
+          <div className="rounded-2xl w-full max-w-md p-6 shadow-xl border border-white/10" style={{ background: '#161B22' }}>
             {menorSuccess ? (
               <div className="text-center py-4">
                 <div className="text-4xl mb-3">📋</div>
-                <h2 className="text-xl font-bold text-gray-900 mb-2">Reporte enviado</h2>
-                <p className="text-sm text-gray-600 mb-6">
+                <h2 className="text-xl font-bold text-white mb-2">Reporte enviado</h2>
+                <p className="text-sm text-gray-400 mb-6">
                   Un administrador revisará el caso manualmente contra los menores registrados y te contactará.
                 </p>
                 <button
                   onClick={() => { setShowMenorForm(false); setMenorSuccess(false); setMenorNombre(''); setMenorContacto(''); setMenorDescripcion(''); setMenorDocFile(null) }}
-                  className="bg-gray-900 text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors"
+                  className="bg-white/10 hover:bg-white/20 text-white px-6 py-2.5 rounded-lg text-sm font-medium transition-colors"
                 >
                   Cerrar
                 </button>
@@ -361,56 +355,56 @@ export default function BusquedaFamiliar() {
               <>
                 <div className="flex items-start justify-between mb-4">
                   <div>
-                    <h2 className="text-lg font-bold text-gray-900">Reportar búsqueda de un menor</h2>
-                    <p className="text-sm text-gray-500 mt-0.5">No hacemos búsqueda automática de menores por seguridad.</p>
+                    <h2 className="text-lg font-bold text-white">Reportar búsqueda de un menor</h2>
+                    <p className="text-sm text-gray-400 mt-0.5">No hacemos búsqueda automática de menores por seguridad.</p>
                   </div>
-                  <button onClick={() => setShowMenorForm(false)} className="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
+                  <button onClick={() => setShowMenorForm(false)} className="text-gray-500 hover:text-gray-300 text-xl leading-none">×</button>
                 </div>
 
-                <div className="bg-purple-50 border border-purple-200 text-purple-800 text-xs px-3 py-2 rounded-lg mb-4">
+                <div className="bg-purple-500/10 border border-purple-500/30 text-purple-200 text-xs px-3 py-2 rounded-lg mb-4">
                   Ante el riesgo de tráfico de menores, necesitamos verificar tu identidad y parentesco antes de
                   que un administrador revise tu caso manualmente y se ponga en contacto contigo directamente.
                 </div>
 
                 <form onSubmit={handleMenorSubmit} className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Tu nombre</label>
+                    <label className="block text-sm font-medium text-gray-300 mb-1">Tu nombre</label>
                     <input
                       type="text"
                       required
                       value={menorNombre}
                       onChange={e => setMenorNombre(e.target.value)}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                      className="w-full bg-white/5 border border-white/15 text-white placeholder-gray-500 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#CF142B] focus:border-transparent"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Tu teléfono o correo de contacto</label>
+                    <label className="block text-sm font-medium text-gray-300 mb-1">Tu teléfono o correo de contacto</label>
                     <input
                       type="text"
                       required
                       value={menorContacto}
                       onChange={e => setMenorContacto(e.target.value)}
                       placeholder="Para que el administrador pueda contactarte"
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                      className="w-full bg-white/5 border border-white/15 text-white placeholder-gray-500 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#CF142B] focus:border-transparent"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Describe al menor que buscas</label>
+                    <label className="block text-sm font-medium text-gray-300 mb-1">Describe al menor que buscas</label>
                     <textarea
                       required
                       rows={3}
                       value={menorDescripcion}
                       onChange={e => setMenorDescripcion(e.target.value)}
                       placeholder="Nombre, edad aproximada, características físicas, dónde se le vio por última vez…"
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                      className="w-full bg-white/5 border border-white/15 text-white placeholder-gray-500 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#CF142B] focus:border-transparent"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Tu cédula o acta de nacimiento del menor <span className="text-red-500">*</span>
+                    <label className="block text-sm font-medium text-gray-300 mb-1">
+                      Tu cédula o acta de nacimiento del menor <span className="text-red-400">*</span>
                     </label>
                     <input
                       type="file"
@@ -418,16 +412,16 @@ export default function BusquedaFamiliar() {
                       accept="image/*"
                       capture="environment"
                       onChange={e => setMenorDocFile(e.target.files?.[0] || null)}
-                      className="w-full text-sm text-gray-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200"
+                      className="w-full text-sm text-gray-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-white/10 file:text-gray-200 hover:file:bg-white/20"
                     />
-                    <p className="text-xs text-gray-400 mt-1">
+                    <p className="text-xs text-gray-500 mt-1">
                       Prueba tu parentesco con el menor. Necesitas iniciar sesión para reportar — solo visible para
                       administradores, mediante enlace temporal.
                     </p>
                   </div>
 
                   {menorError && (
-                    <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-3 py-2 rounded-lg">
+                    <div className="bg-red-500/10 border border-red-500/30 text-red-300 text-sm px-3 py-2 rounded-lg">
                       {menorError}
                     </div>
                   )}
@@ -436,14 +430,15 @@ export default function BusquedaFamiliar() {
                     <button
                       type="submit"
                       disabled={menorLoading || !menorDocFile}
-                      className="flex-1 bg-red-600 hover:bg-red-700 disabled:opacity-60 text-white font-medium py-2.5 rounded-lg text-sm transition-colors"
+                      className="flex-1 text-white font-medium py-2.5 rounded-lg text-sm transition-all hover:brightness-110 disabled:opacity-60"
+                      style={{ background: '#CF142B' }}
                     >
                       {menorLoading ? 'Enviando…' : 'Enviar reporte'}
                     </button>
                     <button
                       type="button"
                       onClick={() => setShowMenorForm(false)}
-                      className="border border-gray-300 text-gray-700 px-4 py-2.5 rounded-lg text-sm hover:bg-gray-50 transition-colors"
+                      className="border border-white/15 text-gray-200 px-4 py-2.5 rounded-lg text-sm hover:bg-white/5 transition-colors"
                     >
                       Cancelar
                     </button>

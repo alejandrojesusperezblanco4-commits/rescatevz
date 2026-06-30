@@ -1,8 +1,17 @@
-export type UserRole = 'admin' | 'rescuer' | 'medical' | 'family'
+export type UserRole = 'admin' | 'rescuer' | 'medical' | 'family' | 'engineer'
 
 export type VictimStatus = 'alive' | 'critical' | 'deceased' | 'unknown'
 
 export type LocationType = 'hospital' | 'shelter' | 'rescue_zone'
+
+// Semáforo de habitabilidad de estructuras (evaluación post-terremoto):
+// pending = aún por analizar, green = habitable, yellow = uso restringido,
+// red = no habitable / peligro.
+export type HabitabilityStatus = 'pending' | 'green' | 'yellow' | 'red'
+
+export type StructureType =
+  | 'residential' | 'school' | 'hospital' | 'commercial'
+  | 'government' | 'bridge' | 'other'
 
 export type AccessRequestStatus = 'pending' | 'approved' | 'rejected'
 
@@ -76,6 +85,24 @@ export interface PublicSearchMatch {
   victim_status: VictimStatus
 }
 
+export interface Structure {
+  id: string
+  name: string
+  address: string | null
+  lat: number | null
+  lng: number | null
+  structure_type: StructureType | null
+  habitability: HabitabilityStatus
+  report_notes: string | null
+  assessment_notes: string | null
+  reported_by: string | null
+  assessed_by: string | null
+  assessed_at: string | null
+  created_at: string
+  updated_at: string
+  assessor?: Pick<Profile, 'id' | 'full_name'>
+}
+
 export interface MinorInquiry {
   id: string
   reporter_user_id: string
@@ -107,4 +134,38 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   rescuer: 'Rescatista',
   medical: 'Personal médico',
   family: 'Familiar',
+  engineer: 'Ingeniero/Arquitecto',
+}
+
+export const HABITABILITY_LABELS: Record<HabitabilityStatus, string> = {
+  pending: 'Por analizar',
+  green: 'Habitable',
+  yellow: 'Uso restringido',
+  red: 'No habitable',
+}
+
+// Píldoras para la lista interna (tema claro).
+export const HABITABILITY_COLORS: Record<HabitabilityStatus, string> = {
+  pending: 'bg-gray-100 text-gray-700',
+  green: 'bg-green-100 text-green-800',
+  yellow: 'bg-yellow-100 text-yellow-800',
+  red: 'bg-red-100 text-red-800',
+}
+
+// Color sólido (hex) para los puntos del semáforo y las chinchetas del mapa.
+export const HABITABILITY_HEX: Record<HabitabilityStatus, string> = {
+  pending: '#6B7280',
+  green: '#16A34A',
+  yellow: '#CA8A04',
+  red: '#DC2626',
+}
+
+export const STRUCTURE_TYPE_LABELS: Record<StructureType, string> = {
+  residential: 'Residencial',
+  school: 'Escuela',
+  hospital: 'Centro de salud',
+  commercial: 'Comercial',
+  government: 'Gubernamental',
+  bridge: 'Puente / Vía',
+  other: 'Otro',
 }
