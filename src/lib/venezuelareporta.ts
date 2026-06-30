@@ -104,6 +104,7 @@ export async function publicarVictima(apiKey: string, data: {
   descripcion: string
   ultima_vez: string
   origenId: string
+  status?: 'buscando' | 'a_salvo' | 'encontrado'
 }): Promise<{ publicado: boolean; id?: string }> {
   const res = await fetch(`${BASE}/personas`, {
     method: 'POST',
@@ -112,7 +113,7 @@ export async function publicarVictima(apiKey: string, data: {
       'x-api-key': apiKey,
     },
     body: JSON.stringify({
-      status: 'buscando',
+      status: data.status ?? 'buscando',
       nombre: data.nombre,
       cedula: data.cedula,
       edad: data.edad,

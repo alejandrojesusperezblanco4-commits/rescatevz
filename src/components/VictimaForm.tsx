@@ -47,18 +47,22 @@ export default function VictimaForm({ locations, userId }: VictimaFormProps) {
       photoPaths.push(path)
     }
 
-    const { error: insertError } = await supabase.from('victims').insert({
-      created_by: userId,
-      name: name.trim() || null,
-      physical_description: description.trim(),
-      estimated_age: estimatedAge ? parseInt(estimatedAge) : null,
-      is_minor: isMinor,
-      status,
-      found_location: foundLocation.trim(),
-      current_location_id: currentLocationId || null,
-      photo_urls: photoPaths,
-      notes: notes.trim() || null,
-    })
+    const { data: newVictim, error: insertError } = await supabase
+      .from('victims')
+      .insert({
+        created_by: userId,
+        name: name.trim() || null,
+        physical_description: description.trim(),
+        estimated_age: estimatedAge ? parseInt(estimatedAge) : null,
+        is_minor: isMinor,
+        status,
+        found_location: foundLocation.trim(),
+        current_location_id: currentLocationId || null,
+        photo_urls: photoPaths,
+        notes: notes.trim() || null,
+      })
+      .select('id')
+      .single()
 
     if (insertError) {
       setError('Error al registrar: ' + insertError.message)
@@ -72,6 +76,15 @@ export default function VictimaForm({ locations, userId }: VictimaFormProps) {
       action: 'CREATE_VICTIM',
       resource_type: 'victim',
     })
+
+    // Sync a Venezuela Reporta — fire-and-forget, no bloqueamos al usuario
+    if (newVictim?.id && !isMinor && status !== 'deceased') {
+      fetch('/api/vr/publicar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ victimId: newVictim.id }),
+      }).catch(() => {})
+    }
 
     setSuccess(true)
     setLoading(false)

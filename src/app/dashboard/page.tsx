@@ -3,7 +3,6 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import Header from '@/components/Header'
 import type { Profile } from '@/lib/types'
-import { STATUS_LABELS, STATUS_COLORS } from '@/lib/types'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -13,7 +12,6 @@ export default async function DashboardPage() {
   const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single()
   if (!profile) redirect('/login')
 
-  // Conteos reales de toda la DB en paralelo
   const [
     { count: total },
     { count: alive },
@@ -40,177 +38,245 @@ export default async function DashboardPage() {
     supabase.from('locations').select('id, name, type, current_occupancy, capacity').eq('is_active', true).order('type').limit(6),
   ])
 
-  return (
-    <div className="min-h-screen flex flex-col">
-      <div className="bg-red-600 text-white text-center py-1.5 text-xs font-medium">
-        Emergencia activa — Terremotos Venezuela 24 de junio 2026
-      </div>
-      <Header profile={profile as Profile} />
+  const canRegister = profile.role === 'admin' || (profile.is_verified && ['rescuer', 'medical'].includes(profile.role))
 
-      <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-8">
-        {!profile.is_verified && profile.role !== 'family' && (
-          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 flex gap-3">
-            <span className="text-2xl">⏳</span>
+  const statCards = [
+    { label: 'TOTAL', value: total || 0, color: '#F0F4FF', borderClass: 'border-l-white' },
+    { label: 'CON VIDA', value: alive || 0, color: '#22C55E', borderClass: 'border-l-green-500' },
+    { label: 'CRÍTICO', value: critical || 0, color: '#DC2626', borderClass: 'border-l-red-600' },
+    { label: 'FALLECIDOS', value: deceased || 0, color: '#94A3B8', borderClass: 'border-l-slate-400' },
+    { label: 'MENORES', value: minors || 0, color: '#A855F7', borderClass: 'border-l-purple-500' },
+  ]
+
+  return (
+    <div className="min-h-screen flex flex-col antialiased"
+      style={{ background: '#1a2744', color: '#F0F4FF', fontFamily: "'Manrope', sans-serif" }}>
+
+      {/* 1. Topbar alerta fija */}
+      <div className="h-8 text-white flex items-center justify-center uppercase tracking-wider text-xs fixed top-0 w-full z-[60]"
+        style={{ background: '#DC2626' }}>
+        <div className="w-2 h-2 rounded-full bg-white mr-2 animate-pulse" />
+        EMERGENCIA ACTIVA · Terremotos Venezuela · 24 jun 2026
+      </div>
+
+      {/* 2. Header / Navbar */}
+      <header className="shadow-md flex justify-between items-center w-full px-8 h-16 fixed top-8 z-50 border-b"
+        style={{ background: '#1e2d4a', borderColor: 'rgba(36,51,86,0.5)' }}>
+        <div className="flex items-center gap-6">
+          <div className="flex items-center gap-3">
+            <div className="h-8 w-8 rounded-full flex items-center justify-center font-black text-xs shrink-0"
+              style={{ background: '#D4A017', color: '#1a2744' }}>
+              RV
+            </div>
+            <span className="font-bold text-base" style={{ color: '#F0F4FF' }}>RescateVZ</span>
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border"
+              style={{ background: 'rgba(212,160,23,0.15)', color: '#D4A017', borderColor: 'rgba(212,160,23,0.3)' }}>
+              {profile.role === 'admin' ? 'Admin' : profile.role === 'rescuer' ? 'Rescatista' : profile.role === 'medical' ? 'Médico' : 'Familia'}
+            </span>
+          </div>
+          <nav className="hidden md:flex items-center gap-6 h-full font-semibold text-sm">
+            <Link href="/dashboard" className="border-b-2 h-16 flex items-center px-1"
+              style={{ color: '#D4A017', borderColor: '#D4A017' }}>
+              Dashboard
+            </Link>
+            {['rescuer', 'medical', 'admin'].includes(profile.role) && (
+              <Link href="/victimas" className="h-16 flex items-center px-1 transition-colors hover:text-white"
+                style={{ color: '#94A3B8' }}>Víctimas</Link>
+            )}
+            <Link href="/mapa-publico" className="h-16 flex items-center px-1 transition-colors hover:text-white"
+              style={{ color: '#94A3B8' }}>Mapa</Link>
+            {profile.role === 'admin' && (
+              <>
+                <Link href="/ubicaciones" className="h-16 flex items-center px-1 transition-colors hover:text-white"
+                  style={{ color: '#94A3B8' }}>Ubicaciones</Link>
+                <Link href="/solicitudes" className="h-16 flex items-center px-1 transition-colors hover:text-white"
+                  style={{ color: '#94A3B8' }}>Solicitudes</Link>
+              </>
+            )}
+          </nav>
+        </div>
+
+        <div className="flex items-center gap-4">
+          <div className="hidden sm:flex items-center gap-3 text-right">
             <div>
-              <p className="font-medium text-amber-800">Cuenta pendiente de verificación</p>
-              <p className="text-sm text-amber-700 mt-0.5">
+              <div className="text-sm font-semibold" style={{ color: '#F0F4FF' }}>{profile.full_name}</div>
+              <div className="text-[11px]" style={{ color: '#94A3B8' }}>(Admin)</div>
+            </div>
+          </div>
+          {canRegister && (
+            <Link href="/victimas/nueva"
+              className="px-4 py-2 rounded-md font-bold flex items-center gap-2 transition-all hover:brightness-110 active:scale-95 text-sm"
+              style={{ background: '#D4A017', color: '#1a2744' }}>
+              <span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>add</span>
+              Registrar víctima
+            </Link>
+          )}
+        </div>
+      </header>
+
+      {/* Main — pt-28 = top-8 (alert bar) + h-16 (header) */}
+      <main className="flex-grow pt-28 px-4 md:px-8 pb-12 flex flex-col gap-6 w-full max-w-7xl mx-auto">
+
+        {/* Verificación pendiente */}
+        {!profile.is_verified && profile.role !== 'family' && (
+          <div className="flex items-center gap-3 p-4 rounded-lg"
+            style={{ background: 'rgba(212,160,23,0.10)', border: '1px solid rgba(212,160,23,0.20)' }}>
+            <span className="material-symbols-outlined" style={{ color: '#D4A017' }}>schedule</span>
+            <div>
+              <p className="text-sm font-semibold" style={{ color: '#D4A017' }}>Cuenta pendiente de verificación</p>
+              <p className="text-xs mt-0.5" style={{ color: '#94A3B8' }}>
                 Un administrador revisará tu solicitud como {profile.role === 'rescuer' ? 'rescatista' : 'personal médico'} pronto.
               </p>
             </div>
           </div>
         )}
 
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">Panel de control</h1>
-          {(profile.role === 'admin' || (profile.is_verified && ['rescuer', 'medical'].includes(profile.role))) && (
-            <Link href="/victimas/nueva" className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
-              + Registrar víctima
-            </Link>
-          )}
+        {/* 3. Stat Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          {statCards.map(s => (
+            <div key={s.label}
+              className={`rounded-lg p-4 flex flex-col justify-between border-l-4 ${s.borderClass}`}
+              style={{
+                background: '#1e2d4a',
+                border: '1px solid rgba(36,51,86,0.5)',
+                borderLeftWidth: '4px',
+                borderLeftColor: s.color,
+                height: '120px',
+              }}>
+              <div className="text-[12px] font-bold uppercase tracking-widest" style={{ color: '#94A3B8' }}>
+                {s.label}
+              </div>
+              <div className="tabular-nums font-black" style={{ fontSize: '42px', lineHeight: 1.2, color: s.color }}>
+                {s.value.toLocaleString('es-VE')}
+              </div>
+            </div>
+          ))}
         </div>
 
-        {/* Stats totales reales */}
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
-          <StatCard label="Total registradas" value={total || 0} color="blue" />
-          <StatCard label="Con vida" value={alive || 0} color="green" />
-          <StatCard label="Estado crítico" value={critical || 0} color="orange" />
-          <StatCard label="Fallecidos" value={deceased || 0} color="gray" />
-          <StatCard label="Menores" value={minors || 0} color="purple" />
-        </div>
-
-        {/* Alertas admin */}
-        {profile.role === 'admin' && (
-          <div className="flex flex-col sm:flex-row gap-3 mb-6">
+        {/* 4. Alertas admin */}
+        {profile.role === 'admin' && ((pendingSolicitudes || 0) > 0 || (pendingStaff || 0) > 0) && (
+          <div className="flex flex-col sm:flex-row gap-4">
             {(pendingSolicitudes || 0) > 0 && (
-              <AlertCard
-                icon="🔔"
-                text={`${pendingSolicitudes} solicitud${pendingSolicitudes! > 1 ? 'es' : ''} de acceso familiar pendiente${pendingSolicitudes! > 1 ? 's' : ''}`}
-                href="/solicitudes"
-                label="Revisar"
-                color="red"
-              />
+              <Link href="/solicitudes" className="flex-1 rounded-lg p-3 flex items-center gap-3 text-sm transition-opacity hover:opacity-90"
+                style={{ background: 'rgba(220,38,38,0.10)', border: '1px solid rgba(220,38,38,0.20)', color: '#F0F4FF' }}>
+                <span className="material-symbols-outlined" style={{ color: '#DC2626' }}>notifications</span>
+                <span>
+                  <strong>{pendingSolicitudes} solicitud{(pendingSolicitudes || 0) > 1 ? 'es' : ''} de acceso familiar</strong> pendiente{(pendingSolicitudes || 0) > 1 ? 's' : ''} de revisión.
+                </span>
+              </Link>
             )}
             {(pendingStaff || 0) > 0 && (
-              <AlertCard
-                icon="👤"
-                text={`${pendingStaff} rescatista${pendingStaff! > 1 ? 's' : ''} pendiente${pendingStaff! > 1 ? 's' : ''} de verificación`}
-                href="/verificacion"
-                label="Verificar"
-                color="amber"
-              />
+              <Link href="/verificacion" className="flex-1 rounded-lg p-3 flex items-center gap-3 text-sm transition-opacity hover:opacity-90"
+                style={{ background: 'rgba(212,160,23,0.10)', border: '1px solid rgba(212,160,23,0.20)', color: '#F0F4FF' }}>
+                <span className="material-symbols-outlined" style={{ color: '#D4A017' }}>person</span>
+                <span>
+                  <strong>{pendingStaff} rescatista{(pendingStaff || 0) > 1 ? 's' : ''}</strong> requieren verificación de acceso.
+                </span>
+              </Link>
             )}
           </div>
         )}
 
+        {/* 5. Grid principal */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Últimas víctimas */}
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h2 className="font-semibold text-gray-900">Últimos registros</h2>
-                <p className="text-xs text-gray-400 mt-0.5">{total || 0} víctimas en total</p>
-              </div>
-              <Link href="/victimas" className="text-sm text-red-600 hover:underline">Ver todos</Link>
+          {/* Últimos registros */}
+          <div className="rounded-lg flex flex-col"
+            style={{ background: '#1e2d4a', border: '1px solid rgba(36,51,86,0.5)' }}>
+            <div className="p-4 flex justify-between items-center"
+              style={{ borderBottom: '1px solid rgba(36,51,86,0.5)' }}>
+              <h2 className="font-semibold text-base" style={{ color: '#F0F4FF' }}>Últimos registros</h2>
+              <Link href="/victimas" className="text-sm transition-colors hover:text-white"
+                style={{ color: '#94A3B8' }}>Ver todos</Link>
             </div>
-            {!recentVictims || recentVictims.length === 0 ? (
-              <p className="text-sm text-gray-400 text-center py-8">No hay registros aún</p>
-            ) : (
-              <div className="space-y-2">
-                {recentVictims.map(v => (
-                  <Link
-                    key={v.id}
-                    href={`/victima/${v.id}`}
-                    className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0 hover:bg-gray-50 -mx-2 px-2 rounded transition-colors"
-                  >
-                    <div className="flex items-center gap-2 min-w-0">
-                      {v.is_minor && <span className="text-xs bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded font-medium shrink-0">Menor</span>}
-                      <span className="text-sm text-gray-700 truncate">{v.name || <span className="text-gray-400 italic">Sin nombre</span>}</span>
+            <div className="p-2 flex flex-col gap-1 overflow-y-auto" style={{ maxHeight: '400px' }}>
+              {!recentVictims || recentVictims.length === 0 ? (
+                <p className="text-sm text-center py-8" style={{ color: '#64748B' }}>No hay registros aún</p>
+              ) : recentVictims.map(v => {
+                const initials = v.name ? v.name.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase() : '?'
+                const mins = Math.round((Date.now() - new Date(v.created_at).getTime()) / 60000)
+                const statusCfg: Record<string, { label: string; color: string; bg: string; border: string }> = {
+                  alive: { label: 'Con vida', color: '#22C55E', bg: 'rgba(34,197,94,0.15)', border: 'rgba(34,197,94,0.3)' },
+                  critical: { label: 'Crítico', color: '#DC2626', bg: 'rgba(220,38,38,0.15)', border: 'rgba(220,38,38,0.3)' },
+                  deceased: { label: 'Fallecido', color: '#94A3B8', bg: 'rgba(148,163,184,0.15)', border: 'rgba(148,163,184,0.3)' },
+                  missing: { label: 'Desaparecido', color: '#D4A017', bg: 'rgba(212,160,23,0.15)', border: 'rgba(212,160,23,0.3)' },
+                }
+                const cfg = statusCfg[v.status] ?? statusCfg.missing
+                return (
+                  <Link key={v.id} href={`/victima/${v.id}`}
+                    className="flex items-center justify-between p-3 rounded-md transition-colors"
+                    style={{ borderBottom: '1px solid rgba(36,51,86,0.5)' }}>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm shrink-0"
+                        style={{ background: 'rgba(36,51,86,0.5)', color: '#F0F4FF' }}>
+                        {initials}
+                      </div>
+                      <div>
+                        <div className="text-sm font-semibold" style={{ color: v.name ? '#F0F4FF' : '#64748B', fontStyle: v.name ? 'normal' : 'italic' }}>
+                          {v.name || 'Sin nombre registrado'}
+                        </div>
+                        <div className="text-xs flex items-center gap-2" style={{ color: '#94A3B8' }}>
+                          <span>Hace {mins < 60 ? `${mins} min` : `${Math.round(mins / 60)}h`}</span>
+                        </div>
+                      </div>
                     </div>
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium shrink-0 ml-2 ${STATUS_COLORS[v.status as keyof typeof STATUS_COLORS]}`}>
-                      {STATUS_LABELS[v.status as keyof typeof STATUS_LABELS]}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      {v.is_minor && (
+                        <span className="px-2.5 py-1 rounded-full text-xs font-semibold"
+                          style={{ background: 'rgba(168,85,247,0.15)', color: '#A855F7', border: '1px solid rgba(168,85,247,0.3)' }}>
+                          Menor
+                        </span>
+                      )}
+                      <span className="px-2.5 py-1 rounded-full text-xs font-semibold"
+                        style={{ background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.border}` }}>
+                        {cfg.label}
+                      </span>
+                    </div>
                   </Link>
-                ))}
-              </div>
-            )}
+                )
+              })}
+            </div>
           </div>
 
           {/* Hospitales y refugios */}
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-semibold text-gray-900">Hospitales y refugios</h2>
-              <div className="flex gap-3">
-                {profile.role === 'admin' && (
-                  <>
-                    <Link href="/sincronizacion" className="text-sm text-blue-600 hover:underline">Sincronizar</Link>
-                    <Link href="/ubicaciones" className="text-sm text-gray-500 hover:text-gray-700 hover:underline">Gestionar</Link>
-                  </>
-                )}
-                <Link href="/mapa-publico" className="text-sm text-red-600 hover:underline">Ver mapa</Link>
-              </div>
+          <div className="rounded-lg flex flex-col"
+            style={{ background: '#1e2d4a', border: '1px solid rgba(36,51,86,0.5)' }}>
+            <div className="p-4 flex justify-between items-center"
+              style={{ borderBottom: '1px solid rgba(36,51,86,0.5)' }}>
+              <h2 className="font-semibold text-base" style={{ color: '#F0F4FF' }}>Hospitales y refugios activos</h2>
+              <Link href="/mapa-publico" className="text-sm transition-colors hover:text-white"
+                style={{ color: '#94A3B8' }}>Ver mapa</Link>
             </div>
-            {!locations || locations.length === 0 ? (
-              <p className="text-sm text-gray-400 text-center py-8">Sin ubicaciones activas</p>
-            ) : (
-              <div className="space-y-2">
-                {locations.map(loc => (
-                  <div key={loc.id} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span>{loc.type === 'hospital' ? '🏥' : '🏕️'}</span>
-                      <span className="text-sm text-gray-700 truncate">{loc.name}</span>
-                    </div>
-                    {loc.capacity && (
-                      <span className={`text-xs shrink-0 ml-2 font-medium ${
-                        (loc.current_occupancy / loc.capacity) > 0.9 ? 'text-red-600' : 'text-gray-400'
-                      }`}>
-                        {loc.current_occupancy}/{loc.capacity}
+            <div className="p-4 flex flex-col gap-4 overflow-y-auto" style={{ maxHeight: '400px' }}>
+              {!locations || locations.length === 0 ? (
+                <p className="text-sm text-center py-8" style={{ color: '#64748B' }}>Sin ubicaciones activas</p>
+              ) : locations.map(loc => {
+                const pct = loc.capacity ? Math.round((loc.current_occupancy / loc.capacity) * 100) : null
+                const barColor = pct === null ? '#D4A017' : pct > 90 ? '#DC2626' : pct > 70 ? '#D4A017' : '#22C55E'
+                return (
+                  <div key={loc.id}>
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-sm flex items-center gap-2" style={{ color: '#F0F4FF' }}>
+                        <span className="material-symbols-outlined text-base" style={{ color: '#94A3B8' }}>
+                          {loc.type === 'hospital' ? 'local_hospital' : 'cottage'}
+                        </span>
+                        {loc.name}
                       </span>
+                      {pct !== null && (
+                        <span className="text-sm font-bold tabular-nums" style={{ color: barColor }}>{pct}%</span>
+                      )}
+                    </div>
+                    {pct !== null && (
+                      <div className="w-full h-1.5 rounded-full overflow-hidden" style={{ background: '#1a2744' }}>
+                        <div className="h-full rounded-full transition-all" style={{ width: `${Math.min(pct, 100)}%`, background: barColor }} />
+                      </div>
                     )}
                   </div>
-                ))}
-              </div>
-            )}
+                )
+              })}
+            </div>
           </div>
         </div>
       </main>
-    </div>
-  )
-}
-
-function StatCard({ label, value, color }: { label: string; value: number; color: string }) {
-  const colors: Record<string, string> = {
-    blue: 'bg-blue-50 text-blue-700 border-blue-100',
-    green: 'bg-green-50 text-green-700 border-green-100',
-    orange: 'bg-orange-50 text-orange-700 border-orange-100',
-    gray: 'bg-gray-50 text-gray-600 border-gray-100',
-    purple: 'bg-purple-50 text-purple-700 border-purple-100',
-  }
-  return (
-    <div className={`rounded-xl border p-4 ${colors[color]}`}>
-      <div className="text-3xl font-bold">{value.toLocaleString('es-VE')}</div>
-      <div className="text-xs mt-0.5 opacity-80 leading-tight">{label}</div>
-    </div>
-  )
-}
-
-function AlertCard({ icon, text, href, label, color }: {
-  icon: string; text: string; href: string; label: string; color: 'red' | 'amber'
-}) {
-  const cls = color === 'red'
-    ? 'bg-red-50 border-red-200 text-red-800'
-    : 'bg-amber-50 border-amber-200 text-amber-800'
-  const btnCls = color === 'red'
-    ? 'bg-red-600 hover:bg-red-700'
-    : 'bg-amber-500 hover:bg-amber-600'
-  return (
-    <div className={`flex-1 border rounded-xl p-4 flex items-center justify-between gap-4 ${cls}`}>
-      <div className="flex items-center gap-2">
-        <span>{icon}</span>
-        <span className="text-sm font-medium">{text}</span>
-      </div>
-      <Link href={href} className={`text-xs text-white px-3 py-1.5 rounded-lg shrink-0 transition-colors ${btnCls}`}>
-        {label}
-      </Link>
     </div>
   )
 }

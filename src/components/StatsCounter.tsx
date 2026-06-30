@@ -6,6 +6,7 @@ interface Stat {
   label: string
   value: number
   color: string
+  borderColor?: string
   prefix?: string
   suffix?: string
 }
@@ -40,18 +41,25 @@ function Counter({ target, duration = 2000 }: { target: number; duration?: numbe
 
 export default function StatsCounter({ stats }: { stats: Stat[] }) {
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 w-full max-w-3xl mx-auto">
+    <>
       {stats.map((s, i) => (
         <div
           key={i}
-          className="flex flex-col items-center justify-center p-4 rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm"
+          className="p-6 rounded-lg"
+          style={{
+            background: '#1a2a46',
+            boxShadow: `-3px 0 0 0 ${s.borderColor ?? '#D4A017'}`,
+            border: '1px solid rgba(69,70,77,0.6)',
+          }}
         >
-          <div className={`text-3xl sm:text-4xl font-black tabular-nums ${s.color}`}>
+          <p className="mb-2 uppercase" style={{ fontSize: '11px', letterSpacing: '0.08em', fontWeight: 500, color: '#c5c6ce' }}>
+            {s.label}
+          </p>
+          <p className="tabular-nums" style={{ fontFamily: "'Manrope', sans-serif", fontSize: '48px', lineHeight: 1, fontWeight: 800, color: '#f6be39' }}>
             {s.prefix}<Counter target={s.value} />{s.suffix}
-          </div>
-          <div className="text-xs text-gray-400 mt-1 text-center leading-tight">{s.label}</div>
+          </p>
         </div>
       ))}
-    </div>
+    </>
   )
 }

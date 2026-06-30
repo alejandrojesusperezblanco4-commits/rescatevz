@@ -21,41 +21,43 @@ export default function Header({ profile }: HeaderProps) {
     router.refresh()
   }
 
+  // Curated nav — max 5 items visible. Secondary links live in the dashboard.
   const nav = [
-    { href: '/dashboard', label: 'Inicio', roles: ['admin', 'rescuer', 'medical', 'family'] },
-    { href: '/victimas', label: 'Víctimas', roles: ['admin', 'rescuer', 'medical'] },
-    { href: '/victimas/nueva', label: 'Registrar víctima', roles: ['admin', 'rescuer', 'medical'] },
-    { href: '/buscar', label: 'Buscar familiar', roles: ['admin', 'rescuer', 'medical', 'family'] },
-    { href: '/mapa-publico', label: 'Mapa', roles: ['admin', 'rescuer', 'medical', 'family'] },
-    { href: '/primeros-auxilios', label: 'Primeros auxilios', roles: ['admin', 'rescuer', 'medical', 'family'] },
-    { href: '/mis-solicitudes', label: 'Mis solicitudes', roles: ['family'] },
-    { href: '/verificacion', label: 'Verificar staff', roles: ['admin'] },
-    { href: '/ubicaciones', label: 'Ubicaciones', roles: ['admin'] },
-    { href: '/admin/importar', label: 'Importar CSV', roles: ['admin'] },
-    { href: '/solicitudes', label: 'Solicitudes', roles: ['admin'] },
-    { href: '/menores', label: 'Reportes de menores', roles: ['admin'] },
+    { href: '/dashboard',      label: 'Dashboard',  roles: ['admin', 'rescuer', 'medical', 'family'] },
+    { href: '/victimas',       label: 'Víctimas',   roles: ['admin', 'rescuer', 'medical'] },
+    { href: '/buscar',         label: 'Buscar',     roles: ['admin', 'rescuer', 'medical', 'family'] },
+    { href: '/mapa-publico',   label: 'Mapa',       roles: ['admin', 'rescuer', 'medical', 'family'] },
+    { href: '/solicitudes',    label: 'Solicitudes',roles: ['admin'] },
+    { href: '/verificacion',   label: 'Verificar',  roles: ['admin'] },
+    { href: '/mis-solicitudes',label: 'Mis solicitudes', roles: ['family'] },
   ] as const
 
   const visibleNav = nav.filter(n => (n.roles as readonly string[]).includes(profile.role))
+  const canRegister = profile.role === 'admin' || (profile.is_verified && ['rescuer', 'medical'].includes(profile.role))
 
   return (
-    <header className="bg-gray-900 text-white sticky top-0 z-50">
+    <header className="sticky top-0 z-50" style={{ background: '#162040', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
       <div className="max-w-6xl mx-auto px-4 flex items-center justify-between h-14">
         <div className="flex items-center gap-6">
           <Link href="/dashboard" className="flex items-center gap-2 font-bold text-base shrink-0">
-            <div className="w-7 h-7 bg-red-600 rounded-full flex items-center justify-center text-xs font-bold">RV</div>
-            RescateVZ
+            <div
+              className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold"
+              style={{ background: '#1e2d4a', border: '1.5px solid #D4A017', color: '#D4A017', fontFamily: 'Manrope, sans-serif' }}
+            >
+              RV
+            </div>
+            <span style={{ color: '#F0F4FF', fontFamily: 'Manrope, sans-serif' }}>RescateVZ</span>
           </Link>
           <nav className="hidden sm:flex items-center gap-1">
             {visibleNav.map(item => (
               <Link
                 key={item.href}
                 href={item.href}
-                className={`text-sm px-3 py-1.5 rounded-md transition-colors ${
-                  pathname === item.href
-                    ? 'bg-white/15 text-white'
-                    : 'text-gray-300 hover:text-white hover:bg-white/10'
-                }`}
+                className="text-sm px-3 py-1.5 rounded-md transition-colors"
+                style={pathname === item.href
+                  ? { color: '#D4A017', background: 'rgba(212,160,23,0.12)' }
+                  : { color: '#94A3B8' }
+                }
               >
                 {item.label}
               </Link>
@@ -64,17 +66,29 @@ export default function Header({ profile }: HeaderProps) {
         </div>
 
         <div className="flex items-center gap-3">
+          {canRegister && (
+            <Link href="/victimas/nueva"
+              className="hidden sm:flex items-center gap-1 text-xs font-bold px-3 py-1.5 rounded-md transition-all hover:brightness-110"
+              style={{ background: '#D4A017', color: '#1a2744' }}>
+              <span className="material-symbols-outlined" style={{ fontSize: '14px', fontVariationSettings: "'FILL' 1" }}>add</span>
+              Registrar
+            </Link>
+          )}
           <div className="hidden sm:flex flex-col items-end">
-            <span className="text-xs text-gray-300">{profile.full_name}</span>
-            <span className="text-xs text-gray-500">{ROLE_LABELS[profile.role]}</span>
+            <span className="text-xs" style={{ color: '#F0F4FF' }}>{profile.full_name?.split(' ')[0]}</span>
+            <span className="text-[10px] uppercase tracking-wide" style={{ color: '#64748B' }}>
+              {ROLE_LABELS[profile.role]}
+            </span>
           </div>
           {!profile.is_verified && profile.role !== 'family' && (
-            <span className="text-xs bg-amber-500 text-white px-2 py-0.5 rounded-full">Pendiente verificación</span>
+            <span className="hidden sm:block text-[10px] font-semibold px-2 py-0.5 rounded-full"
+              style={{ background: 'rgba(212,160,23,0.15)', color: '#D4A017', border: '1px solid rgba(212,160,23,0.3)' }}>
+              Pendiente
+            </span>
           )}
-          <button
-            onClick={handleLogout}
-            className="text-xs text-gray-400 hover:text-white transition-colors border border-gray-700 hover:border-gray-500 px-3 py-1.5 rounded-md"
-          >
+          <button onClick={handleLogout}
+            className="text-xs px-3 py-1.5 rounded-md transition-colors hover:text-white"
+            style={{ color: '#64748B', border: '1px solid rgba(255,255,255,0.1)' }}>
             Salir
           </button>
         </div>
@@ -86,11 +100,11 @@ export default function Header({ profile }: HeaderProps) {
           <Link
             key={item.href}
             href={item.href}
-            className={`text-xs px-3 py-1.5 rounded-md whitespace-nowrap transition-colors shrink-0 ${
-              pathname === item.href
-                ? 'bg-white/15 text-white'
-                : 'text-gray-400 hover:text-white'
-            }`}
+            className="text-xs px-3 py-1.5 rounded-md whitespace-nowrap transition-colors shrink-0"
+            style={pathname === item.href
+              ? { color: '#D4A017', background: 'rgba(212,160,23,0.12)' }
+              : { color: '#64748B' }
+            }
           >
             {item.label}
           </Link>

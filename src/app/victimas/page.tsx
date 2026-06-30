@@ -75,27 +75,30 @@ export default async function VictimasPage({
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <div className="bg-red-600 text-white text-center py-1.5 text-xs font-medium">
-        Emergencia activa — Terremotos Venezuela 24 de junio 2026
+    <div className="min-h-screen flex flex-col" style={{ background: '#1a2744', color: '#F0F4FF' }}>
+      <div className="text-white text-center py-2 text-xs font-semibold uppercase tracking-widest"
+        style={{ background: '#DC2626' }}>
+        🚨 EMERGENCIA ACTIVA — Terremotos Venezuela · 24 jun 2026
       </div>
       <Header profile={profile as Profile} />
 
       <main className="flex-1 max-w-5xl mx-auto w-full px-4 py-8">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Víctimas registradas</h1>
-            <p className="text-sm text-gray-500 mt-0.5">
+            <h1 className="text-2xl font-bold" style={{ fontFamily: 'Manrope, sans-serif', color: '#F0F4FF' }}>
+              Víctimas registradas
+            </h1>
+            <p className="text-sm mt-0.5" style={{ color: '#94A3B8' }}>
               {count !== null ? `${count} registro${count !== 1 ? 's' : ''}` : ''}
               {estado || ubicacionId || soloMenores || q ? ' — con filtros activos' : ' en total'}
             </p>
           </div>
           {(profile.role === 'admin' || (profile.is_verified && profile.role !== 'family')) && (
-            <Link
-              href="/victimas/nueva"
-              className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-            >
-              + Registrar víctima
+            <Link href="/victimas/nueva"
+              className="flex items-center gap-1 text-sm font-bold px-4 py-2 rounded-lg transition-all hover:brightness-110"
+              style={{ background: '#D4A017', color: '#1a2744' }}>
+              <span className="material-symbols-outlined" style={{ fontSize: '16px', fontVariationSettings: "'FILL' 1" }}>add</span>
+              Registrar víctima
             </Link>
           )}
         </div>
