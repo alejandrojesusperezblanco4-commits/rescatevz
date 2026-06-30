@@ -43,6 +43,30 @@ export default async function EstructurasPage() {
             : 'Reporta edificaciones que necesiten inspección. Un ingeniero o arquitecto les asignará el estado del semáforo.'}
         </p>
 
+        {/* Referencia externa: mapa satelital de daños de NASA (uso interno).
+            Es una estimación de probabilidad por zona, no un listado por edificio;
+            sirve para priorizar dónde inspeccionar. */}
+        <a
+          href="https://gis.earthdata.nasa.gov/portal/apps/mapviewer/index.html?webmap=0c3d77dd5aae46e4829d9a282477615c"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6 hover:border-blue-300 transition-colors"
+        >
+          <div className="flex items-start gap-3">
+            <span className="text-2xl shrink-0">🛰️</span>
+            <div>
+              <p className="font-medium text-blue-900">
+                Mapa de daños satelital — NASA <span className="text-xs align-top">↗</span>
+              </p>
+              <p className="text-sm text-blue-800 mt-0.5">
+                Probabilidad de estructuras dañadas (Sentinel-1, ARIA/JPL) del terremoto. Úsalo como referencia
+                para decidir qué zonas inspeccionar primero. Es una estimación preliminar por área, no un listado
+                verificado edificio por edificio.
+              </p>
+            </div>
+          </div>
+        </a>
+
         {!profile.is_verified && (profile.role === 'engineer' || profile.role === 'rescuer') && (
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 flex gap-3">
             <span className="text-xl shrink-0">⏳</span>
