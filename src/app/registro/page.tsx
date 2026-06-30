@@ -8,9 +8,10 @@ import type { UserRole } from '@/lib/types'
 import { ROLE_LABELS } from '@/lib/types'
 
 const ROL_DESCRIPTIONS: Record<string, string> = {
-  family:  'Busco a un familiar desaparecido. Podré solicitar acceso a registros tras verificar mi identidad.',
-  rescuer: 'Soy voluntario o rescatista activo en campo. Podré registrar víctimas tras aprobación de un administrador.',
-  medical: 'Soy médico, enfermero o personal de salud. Podré actualizar el estado médico de víctimas.',
+  family:   'Busco a un familiar desaparecido. Podré solicitar acceso a registros tras verificar mi identidad.',
+  rescuer:  'Soy voluntario o rescatista activo en campo. Podré registrar víctimas tras aprobación de un administrador.',
+  medical:  'Soy médico, enfermero o personal de salud. Podré actualizar el estado médico de víctimas.',
+  engineer: 'Soy ingeniero o arquitecto. Evaluaré la habitabilidad de estructuras tras aprobación de un administrador.',
 }
 
 function RegistroForm() {
@@ -74,8 +75,8 @@ function RegistroForm() {
               {/* Selector de rol */}
               <div>
                 <label className="block text-sm font-medium mb-2" style={{ color: '#94A3B8' }}>Soy…</label>
-                <div className="grid grid-cols-3 gap-2">
-                  {(['family', 'rescuer', 'medical'] as UserRole[]).map(r => (
+                <div className="grid grid-cols-2 gap-2">
+                  {(['family', 'rescuer', 'medical', 'engineer'] as UserRole[]).map(r => (
                     <button
                       key={r}
                       type="button"
