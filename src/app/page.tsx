@@ -42,10 +42,7 @@ export default async function LandingPage() {
         <nav className="flex justify-between items-center px-6 py-4 w-full max-w-[1280px] mx-auto">
           <div className="flex items-center gap-8">
             <div className="flex items-center gap-3">
-              <div className="h-8 w-8 rounded-full flex items-center justify-center font-black text-xs"
-                style={{ background: '#D4A017', color: '#1a2744' }}>
-                RV
-              </div>
+              <img src="/favicon.svg" alt="RescateVZ" className="h-8 w-8" />
               <span className="font-bold text-lg" style={{ fontFamily: "'Manrope', sans-serif", color: '#d8e2ff' }}>
                 RescateVZ
               </span>
@@ -237,10 +234,7 @@ export default async function LandingPage() {
         <div className="max-w-[1280px] mx-auto px-6 pb-12 flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
           <div className="flex flex-col gap-4">
             <div className="flex items-center gap-2">
-              <div className="h-10 w-10 rounded-full flex items-center justify-center font-black"
-                style={{ background: '#D4A017', color: '#402d00' }}>
-                RV
-              </div>
+              <img src="/favicon.svg" alt="RescateVZ" className="h-10 w-10" />
               <span className="font-bold text-lg" style={{ fontFamily: "'Manrope', sans-serif" }}>RescateVZ</span>
             </div>
             <p className="max-w-sm text-sm" style={{ color: '#c5c6ce' }}>

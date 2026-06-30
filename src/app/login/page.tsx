@@ -38,10 +38,7 @@ export default function LoginPage() {
         <div className="w-full max-w-md">
           <div className="text-center mb-10">
             <Link href="/" className="inline-flex items-center gap-3 mb-5">
-              <div className="w-12 h-12 rounded-full flex items-center justify-center font-black"
-                style={{ background: '#1e2d4a', border: '2px solid #D4A017', color: '#D4A017', fontFamily: 'Manrope, sans-serif' }}>
-                RV
-              </div>
+              <img src="/favicon.svg" alt="RescateVZ" className="w-12 h-12" />
               <span className="font-bold text-2xl" style={{ fontFamily: 'Manrope, sans-serif', color: '#F0F4FF' }}>
                 RescateVZ
               </span>
