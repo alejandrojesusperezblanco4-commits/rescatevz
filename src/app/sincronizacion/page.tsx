@@ -61,7 +61,7 @@ export default function SincronizacionPage() {
       const res = await fetch('/api/sync/sitios', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ soloActivos: true }),
+        body: JSON.stringify({ soloAbiertos: false }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || `Error ${res.status}`)

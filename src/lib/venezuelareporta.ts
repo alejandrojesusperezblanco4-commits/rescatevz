@@ -41,11 +41,16 @@ export interface VRSitio {
   id: string
   nombre: string
   tipo: 'acopio' | 'clinica' | 'hospital' | 'refugio' | 'otro'
-  municipio?: string
-  direccion?: string
-  lat?: number
-  lng?: number
-  activo: boolean
+  municipio?: string | null
+  lat?: number | null
+  lng?: number | null
+  estado_operativo?: string   // 'abierto' | 'cerrado' | etc.
+  necesidades?: string[]
+  personas_estimadas?: number | null
+  nota?: string | null
+  frescura?: string
+  ultimo_reporte_at?: string
+  reportes?: number
 }
 
 export interface VRPersonasResponse {
