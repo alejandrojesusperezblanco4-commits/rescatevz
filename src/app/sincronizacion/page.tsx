@@ -61,23 +61,26 @@ export default function SincronizacionPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white p-6 max-w-4xl mx-auto">
+    <div className="min-h-screen p-6 max-w-4xl mx-auto" style={{ background: '#1a2744', color: '#F0F4FF' }}>
       <div className="mb-8">
-        <h1 className="text-2xl font-bold mb-1">Sincronización externa</h1>
-        <p className="text-gray-400 text-sm">
+        <h1 className="text-2xl font-bold mb-1" style={{ fontFamily: 'Manrope, sans-serif' }}>
+          Sincronización externa
+        </h1>
+        <p className="text-sm" style={{ color: '#94A3B8' }}>
           Cruza las víctimas registradas en RescateVZ contra la base de datos de{' '}
-          <a href="https://venezuelareporta.org" target="_blank" rel="noopener noreferrer" className="text-blue-400 underline">
+          <a href="https://venezuelareporta.org" target="_blank" rel="noopener noreferrer"
+            className="underline" style={{ color: '#D4A017' }}>
             Venezuela Reporta
           </a>{' '}
           — personas buscadas y listas de ingresos hospitalarios.
         </p>
       </div>
 
-      <div className="bg-gray-900 border border-gray-800 rounded-lg p-5 mb-8">
+      <div className="rounded-lg p-5 mb-8" style={{ background: '#1e2d4a', border: '1px solid rgba(36,51,86,0.5)' }}>
         <div className="flex items-start gap-4">
           <div className="flex-1">
-            <h2 className="font-semibold mb-1">Venezuela Reporta</h2>
-            <p className="text-gray-400 text-sm">
+            <h2 className="font-semibold mb-1" style={{ color: '#F0F4FF' }}>Venezuela Reporta</h2>
+            <p className="text-sm" style={{ color: '#94A3B8' }}>
               API pública con registros de personas buscadas, ingresos hospitalarios y sitios de atención.
               Lectura libre · Sin autenticación · Atribución obligatoria.
             </p>
@@ -85,7 +88,8 @@ export default function SincronizacionPage() {
           <button
             onClick={runSync}
             disabled={loading}
-            className="shrink-0 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+            className="shrink-0 px-4 py-2 rounded-lg text-sm font-bold transition-all hover:brightness-110 disabled:opacity-50"
+            style={{ background: '#D4A017', color: '#1a2744' }}
           >
             {loading ? 'Buscando…' : 'Buscar coincidencias'}
           </button>
@@ -93,7 +97,8 @@ export default function SincronizacionPage() {
       </div>
 
       {error && (
-        <div className="bg-red-950 border border-red-800 rounded-lg p-4 mb-6 text-red-300 text-sm">
+        <div className="rounded-lg p-4 mb-6 text-sm"
+          style={{ background: 'rgba(220,38,38,0.10)', border: '1px solid rgba(220,38,38,0.3)', color: '#FCA5A5' }}>
           {error}
         </div>
       )}

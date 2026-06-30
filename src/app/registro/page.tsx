@@ -1,15 +1,14 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, Suspense } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import type { UserRole } from '@/lib/types'
 import { ROLE_LABELS } from '@/lib/types'
-import { Suspense } from 'react'
 
 const ROL_DESCRIPTIONS: Record<string, string> = {
-  family: 'Busco a un familiar desaparecido. Podré solicitar acceso a registros tras verificar mi identidad.',
+  family:  'Busco a un familiar desaparecido. Podré solicitar acceso a registros tras verificar mi identidad.',
   rescuer: 'Soy voluntario o rescatista activo en campo. Podré registrar víctimas tras aprobación de un administrador.',
   medical: 'Soy médico, enfermero o personal de salud. Podré actualizar el estado médico de víctimas.',
 }
@@ -31,16 +30,12 @@ function RegistroForm() {
     e.preventDefault()
     setLoading(true)
     setError('')
-
     const supabase = createClient()
     const { error } = await supabase.auth.signUp({
       email,
       password,
-      options: {
-        data: { full_name: fullName, role: rol, cedula },
-      },
+      options: { data: { full_name: fullName, role: rol, cedula } },
     })
-
     if (error) {
       setError(error.message)
       setLoading(false)
@@ -51,102 +46,83 @@ function RegistroForm() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
-      <div className="bg-red-600 text-white text-center py-2 text-sm font-medium">
-        Emergencia activa — Terremotos Venezuela 24 de junio 2026
+    <div className="min-h-screen flex flex-col" style={{ background: '#1a2744', color: '#F0F4FF' }}>
+      <div className="text-white text-center py-2 text-xs font-semibold uppercase tracking-widest"
+        style={{ background: '#DC2626' }}>
+        🚨 EMERGENCIA ACTIVA — Terremotos Venezuela · 24 jun 2026
       </div>
 
       <div className="flex-1 flex items-center justify-center px-4 py-12">
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
-            <Link href="/" className="inline-flex items-center gap-2 mb-4">
-              <div className="w-10 h-10 bg-red-600 rounded-full flex items-center justify-center font-bold text-white">RV</div>
-              <span className="font-bold text-xl text-gray-900">RescateVZ</span>
+            <Link href="/" className="inline-flex items-center gap-3 mb-5">
+              <div className="w-12 h-12 rounded-full flex items-center justify-center font-black"
+                style={{ background: '#1e2d4a', border: '2px solid #D4A017', color: '#D4A017', fontFamily: 'Manrope, sans-serif' }}>
+                RV
+              </div>
+              <span className="font-bold text-2xl" style={{ fontFamily: 'Manrope, sans-serif', color: '#F0F4FF' }}>
+                RescateVZ
+              </span>
             </Link>
-            <h1 className="text-2xl font-bold text-gray-900">Crear cuenta</h1>
+            <h1 className="text-2xl font-bold" style={{ fontFamily: 'Manrope, sans-serif', color: '#F0F4FF' }}>
+              Crear cuenta
+            </h1>
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
-            <form onSubmit={handleRegister} className="space-y-4">
-              {/* Rol selector */}
+          <div className="rounded-xl p-8" style={{ background: '#1e2d4a', border: '1px solid rgba(36,51,86,0.7)' }}>
+            <form onSubmit={handleRegister} className="space-y-5">
+              {/* Selector de rol */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Soy…</label>
+                <label className="block text-sm font-medium mb-2" style={{ color: '#94A3B8' }}>Soy…</label>
                 <div className="grid grid-cols-3 gap-2">
                   {(['family', 'rescuer', 'medical'] as UserRole[]).map(r => (
                     <button
                       key={r}
                       type="button"
                       onClick={() => setRol(r)}
-                      className={`py-2 px-3 text-xs font-medium rounded-lg border transition-colors ${
-                        rol === r
-                          ? 'bg-red-600 text-white border-red-600'
-                          : 'bg-white text-gray-700 border-gray-300 hover:border-red-300'
-                      }`}
+                      className="py-2 px-3 text-xs font-semibold rounded-lg border transition-all"
+                      style={rol === r
+                        ? { background: '#D4A017', color: '#1a2744', borderColor: '#D4A017' }
+                        : { background: 'transparent', color: '#94A3B8', borderColor: 'rgba(36,51,86,0.7)' }
+                      }
                     >
                       {ROLE_LABELS[r]}
                     </button>
                   ))}
                 </div>
-                <p className="text-xs text-gray-500 mt-2">{ROL_DESCRIPTIONS[rol]}</p>
+                <p className="text-xs mt-2" style={{ color: '#64748B' }}>{ROL_DESCRIPTIONS[rol]}</p>
               </div>
 
               {rol !== 'family' && (
-                <div className="bg-amber-50 border border-amber-200 text-amber-800 text-xs px-3 py-2 rounded-lg">
-                  Tu cuenta quedará en revisión hasta que un administrador la verifique. Puedes navegar pero no podrás registrar víctimas aún.
+                <div className="text-xs px-3 py-2.5 rounded-lg"
+                  style={{ background: 'rgba(212,160,23,0.08)', border: '1px solid rgba(212,160,23,0.2)', color: '#FCD34D' }}>
+                  Tu cuenta quedará en revisión hasta que un administrador la verifique.
                 </div>
               )}
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Nombre completo</label>
-                <input
-                  type="text"
-                  required
-                  value={fullName}
-                  onChange={e => setFullName(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                  placeholder="Tu nombre y apellido"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Número de cédula</label>
-                <input
-                  type="text"
-                  required
-                  value={cedula}
-                  onChange={e => setCedula(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                  placeholder="V-12345678"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Correo electrónico</label>
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                  placeholder="tu@correo.com"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Contraseña</label>
-                <input
-                  type="password"
-                  required
-                  minLength={8}
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                  placeholder="Mínimo 8 caracteres"
-                />
-              </div>
+              {[
+                { label: 'Nombre completo', type: 'text', value: fullName, setter: setFullName, placeholder: 'Tu nombre y apellido', required: true },
+                { label: 'Número de cédula', type: 'text', value: cedula, setter: setCedula, placeholder: 'V-12345678', required: true },
+                { label: 'Correo electrónico', type: 'email', value: email, setter: setEmail, placeholder: 'tu@correo.com', required: true },
+                { label: 'Contraseña', type: 'password', value: password, setter: setPassword, placeholder: 'Mínimo 8 caracteres', required: true, minLength: 8 },
+              ].map(f => (
+                <div key={f.label}>
+                  <label className="block text-sm font-medium mb-1.5" style={{ color: '#94A3B8' }}>{f.label}</label>
+                  <input
+                    type={f.type}
+                    required={f.required}
+                    minLength={f.minLength}
+                    value={f.value}
+                    onChange={e => f.setter(e.target.value)}
+                    className="w-full rounded-lg px-3 py-2.5 text-sm"
+                    placeholder={f.placeholder}
+                  />
+                </div>
+              ))}
 
               {error && (
-                <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-3 py-2 rounded-lg">
+                <div className="text-sm px-3 py-2 rounded-lg"
+                  style={{ background: 'rgba(220,38,38,0.10)', border: '1px solid rgba(220,38,38,0.3)', color: '#FCA5A5' }}>
                   {error}
                 </div>
               )}
@@ -154,19 +130,23 @@ function RegistroForm() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-red-600 hover:bg-red-700 disabled:opacity-60 text-white font-medium py-2.5 rounded-lg transition-colors"
-              >
+                className="w-full font-bold py-3 rounded-lg transition-all hover:brightness-110 disabled:opacity-60"
+                style={{ background: '#D4A017', color: '#1a2744' }}>
                 {loading ? 'Creando cuenta…' : 'Crear cuenta'}
               </button>
             </form>
 
-            <p className="text-center text-sm text-gray-500 mt-6">
+            <p className="text-center text-sm mt-6" style={{ color: '#64748B' }}>
               ¿Ya tienes cuenta?{' '}
-              <Link href="/login" className="text-red-600 hover:underline font-medium">
+              <Link href="/login" className="font-medium hover:underline" style={{ color: '#D4A017' }}>
                 Iniciar sesión
               </Link>
             </p>
           </div>
+
+          <p className="text-center text-xs mt-4" style={{ color: '#475569' }}>
+            <Link href="/" className="hover:text-gray-400">← Volver al inicio</Link>
+          </p>
         </div>
       </div>
     </div>

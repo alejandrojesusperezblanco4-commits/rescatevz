@@ -20,14 +20,17 @@ export default async function UbicacionesPage() {
     .order('name')
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <div className="bg-red-600 text-white text-center py-1.5 text-xs font-medium">
-        Emergencia activa — Terremotos Venezuela 24 de junio 2026
+    <div className="min-h-screen flex flex-col" style={{ background: '#1a2744', color: '#F0F4FF' }}>
+      <div className="text-white text-center py-2 text-xs font-semibold uppercase tracking-widest"
+        style={{ background: '#DC2626' }}>
+        🚨 EMERGENCIA ACTIVA — Terremotos Venezuela · 24 jun 2026
       </div>
       <Header profile={profile as Profile} />
       <main className="flex-1 max-w-4xl mx-auto w-full px-4 py-8">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Hospitales y refugios</h1>
-        <p className="text-sm text-gray-500 mb-8">
+        <h1 className="text-2xl font-bold mb-2" style={{ fontFamily: 'Manrope, sans-serif', color: '#F0F4FF' }}>
+          Hospitales y refugios
+        </h1>
+        <p className="text-sm mb-8" style={{ color: '#94A3B8' }}>
           Gestiona las ubicaciones activas que aparecen en el mapa y en el formulario de registro de víctimas.
         </p>
         <UbicacionesPanel locations={locations || []} />

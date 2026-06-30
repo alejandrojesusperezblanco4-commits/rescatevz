@@ -9,6 +9,12 @@ const DOCUMENT_TYPE_LABELS: Record<IdDocumentType, string> = {
   acta_nacimiento: 'Acta de nacimiento',
 }
 
+const STATUS_CONFIG = {
+  pending:  { label: 'Pendiente',  color: '#D4A017', bg: 'rgba(212,160,23,0.12)',  border: 'rgba(212,160,23,0.3)' },
+  approved: { label: 'Aprobada',   color: '#22C55E', bg: 'rgba(34,197,94,0.12)',   border: 'rgba(34,197,94,0.3)' },
+  rejected: { label: 'Rechazada',  color: '#64748B', bg: 'rgba(100,116,139,0.12)', border: 'rgba(100,116,139,0.3)' },
+}
+
 export default async function MisSolicitudesPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -24,50 +30,73 @@ export default async function MisSolicitudesPage() {
     .order('created_at', { ascending: false })
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <div className="bg-red-600 text-white text-center py-1.5 text-xs font-medium">
-        Emergencia activa — Terremotos Venezuela 24 de junio 2026
+    <div className="min-h-screen flex flex-col" style={{ background: '#1a2744', color: '#F0F4FF' }}>
+      <div className="text-white text-center py-2 text-xs font-semibold uppercase tracking-widest"
+        style={{ background: '#DC2626' }}>
+        🚨 EMERGENCIA ACTIVA — Terremotos Venezuela · 24 jun 2026
       </div>
       <Header profile={profile as Profile} />
 
       <main className="flex-1 max-w-2xl mx-auto w-full px-4 py-8">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Mis solicitudes de acceso</h1>
-        <p className="text-sm text-gray-500 mb-8">
-          Aquí puedes ver el estado de tus solicitudes para confirmar y ver el perfil completo de una persona
-          encontrada. Las aprobaciones son válidas por 48 horas.
+        <h1 className="text-2xl font-bold mb-2" style={{ fontFamily: 'Manrope, sans-serif', color: '#F0F4FF' }}>
+          Mis solicitudes de acceso
+        </h1>
+        <p className="text-sm mb-8" style={{ color: '#94A3B8' }}>
+          Estado de tus solicitudes para ver el perfil completo de una persona encontrada.
+          Las aprobaciones son válidas por 48 horas.
         </p>
 
         {!solicitudes || solicitudes.length === 0 ? (
-          <p className="text-sm text-gray-400 text-center py-12">
-            Aún no has enviado solicitudes. Puedes hacerlo desde{' '}
-            <Link href="/buscar" className="text-red-600 hover:underline">la búsqueda</Link>.
-          </p>
+          <div className="text-center py-16">
+            <span className="material-symbols-outlined text-4xl mb-3 block" style={{ color: '#64748B' }}>inbox</span>
+            <p className="text-sm mb-2" style={{ color: '#64748B' }}>
+              Aún no has enviado solicitudes.
+            </p>
+            <Link href="/buscar" className="text-sm font-medium hover:underline" style={{ color: '#D4A017' }}>
+              Buscar a un familiar →
+            </Link>
+          </div>
         ) : (
           <div className="space-y-3">
             {solicitudes.map(s => {
+              const cfg = STATUS_CONFIG[s.status as keyof typeof STATUS_CONFIG] ?? STATUS_CONFIG.rejected
               const isApprovedActive = s.status === 'approved' && s.expires_at && new Date(s.expires_at) > new Date()
+              const expiresAt = s.expires_at ? new Date(s.expires_at) : null
               return (
-                <div key={s.id} className="bg-white rounded-xl border border-gray-200 p-4">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                      s.status === 'pending' ? 'bg-amber-100 text-amber-800' :
-                      s.status === 'approved' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
-                    }`}>
-                      {s.status === 'pending' ? 'Pendiente' : s.status === 'approved' ? 'Aprobada' : 'Rechazada'}
+                <div key={s.id} className="rounded-xl p-5"
+                  style={{ background: '#1e2d4a', border: '1px solid rgba(36,51,86,0.5)' }}>
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-xs font-semibold px-2.5 py-1 rounded-full"
+                      style={{ color: cfg.color, background: cfg.bg, border: `1px solid ${cfg.border}` }}>
+                      {cfg.label}
                     </span>
-                    <span className="text-xs text-gray-400">{new Date(s.created_at).toLocaleDateString('es-VE')}</span>
+                    <span className="text-xs" style={{ color: '#64748B' }}>
+                      {new Date(s.created_at).toLocaleDateString('es-VE')}
+                    </span>
                   </div>
-                  <p className="text-sm text-gray-600">Relación: {s.relationship_description}</p>
-                  <p className="text-xs text-gray-400">Documento: {DOCUMENT_TYPE_LABELS[s.id_document_type as IdDocumentType]}</p>
+                  <p className="text-sm mb-1" style={{ color: '#d0d8f0' }}>
+                    Relación: {s.relationship_description}
+                  </p>
+                  <p className="text-xs mb-3" style={{ color: '#94A3B8' }}>
+                    Documento: {DOCUMENT_TYPE_LABELS[s.id_document_type as IdDocumentType]}
+                  </p>
                   {isApprovedActive ? (
-                    <Link
-                      href={`/victima/${s.victim_id}`}
-                      className="inline-block mt-2 text-sm bg-gray-900 text-white px-3 py-1.5 rounded-lg hover:bg-gray-800 transition-colors"
-                    >
-                      Ver perfil completo
-                    </Link>
+                    <div className="flex items-center justify-between">
+                      <Link href={`/victima/${s.victim_id}`}
+                        className="text-sm font-bold px-4 py-2 rounded-lg transition-all hover:brightness-110 inline-block"
+                        style={{ background: '#D4A017', color: '#1a2744' }}>
+                        Ver perfil completo →
+                      </Link>
+                      {expiresAt && (
+                        <span className="text-xs" style={{ color: '#64748B' }}>
+                          Expira: {expiresAt.toLocaleDateString('es-VE')}
+                        </span>
+                      )}
+                    </div>
                   ) : s.status === 'approved' ? (
-                    <p className="text-xs text-amber-600 mt-2">El acceso expiró. Solicita de nuevo si lo necesitas.</p>
+                    <p className="text-xs" style={{ color: '#D4A017' }}>
+                      El acceso expiró. Solicita de nuevo si lo necesitas.
+                    </p>
                   ) : null}
                 </div>
               )

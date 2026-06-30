@@ -33,21 +33,25 @@ export default async function VerificacionPage() {
     .limit(20)
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <div className="bg-red-600 text-white text-center py-1.5 text-xs font-medium">
-        Emergencia activa — Terremotos Venezuela 24 de junio 2026
+    <div className="min-h-screen flex flex-col" style={{ background: '#1a2744', color: '#F0F4FF' }}>
+      <div className="text-white text-center py-2 text-xs font-semibold uppercase tracking-widest"
+        style={{ background: '#DC2626' }}>
+        🚨 EMERGENCIA ACTIVA — Terremotos Venezuela · 24 jun 2026
       </div>
       <Header profile={profile as Profile} />
       <main className="flex-1 max-w-4xl mx-auto w-full px-4 py-8">
         <div className="flex items-center justify-between mb-2">
-          <h1 className="text-2xl font-bold text-gray-900">Verificación de rescatistas</h1>
+          <h1 className="text-2xl font-bold" style={{ fontFamily: 'Manrope, sans-serif', color: '#F0F4FF' }}>
+            Verificación de rescatistas
+          </h1>
           {(pendientes?.length ?? 0) > 0 && (
-            <span className="bg-red-100 text-red-700 text-sm font-semibold px-3 py-1 rounded-full">
+            <span className="text-sm font-semibold px-3 py-1 rounded-full"
+              style={{ background: 'rgba(220,38,38,0.15)', color: '#DC2626', border: '1px solid rgba(220,38,38,0.3)' }}>
               {pendientes!.length} pendiente{pendientes!.length > 1 ? 's' : ''}
             </span>
           )}
         </div>
-        <p className="text-sm text-gray-500 mb-8">
+        <p className="text-sm mb-8" style={{ color: '#94A3B8' }}>
           Revisa las solicitudes de rescatistas y personal médico antes de darles acceso.
           Al aprobar, podrán registrar víctimas. Al rechazar, su cuenta queda como familiar.
         </p>

@@ -64,30 +64,34 @@ export default async function VictimaPage({ params }: { params: Promise<{ id: st
   const isStaff = ['admin', 'rescuer', 'medical'].includes(profile.role)
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <div className="bg-red-600 text-white text-center py-1.5 text-xs font-medium">
-        Emergencia activa — Terremotos Venezuela 24 de junio 2026
+    <div className="min-h-screen flex flex-col" style={{ background: '#1a2744', color: '#F0F4FF' }}>
+      <div className="text-white text-center py-2 text-xs font-semibold uppercase tracking-widest"
+        style={{ background: '#DC2626' }}>
+        🚨 EMERGENCIA ACTIVA — Terremotos Venezuela · 24 jun 2026
       </div>
       <Header profile={profile as Profile} />
 
       <main className="flex-1 max-w-2xl mx-auto w-full px-4 py-8">
         <Link
           href={profile.role === 'family' ? '/mis-solicitudes' : '/victimas'}
-          className="text-sm text-red-600 hover:underline"
+          className="text-sm transition-colors hover:text-white"
+          style={{ color: '#D4A017' }}
         >
           ← {profile.role === 'family' ? 'Mis solicitudes' : 'Lista de víctimas'}
         </Link>
 
-        <div className="bg-white rounded-xl border border-gray-200 p-6 mt-4">
-          <div className="flex items-center justify-between mb-4">
-            <h1 className="text-xl font-bold text-gray-900">{victim.name || 'Persona sin nombre registrado'}</h1>
+        <div className="rounded-xl p-6 mt-4" style={{ background: '#1e2d4a', border: '1px solid rgba(36,51,86,0.5)' }}>
+          <div className="flex items-center justify-between mb-5">
+            <h1 className="text-xl font-bold" style={{ fontFamily: 'Manrope, sans-serif', color: '#F0F4FF' }}>
+              {victim.name || 'Persona sin nombre registrado'}
+            </h1>
             <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[victim.status as VictimStatus]}`}>
               {STATUS_LABELS[victim.status as VictimStatus]}
             </span>
           </div>
 
           {photoUrls.length > 0 && (
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-5">
               {photoUrls.map((url, i) => (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img key={i} src={url} alt="Foto de la víctima" className="rounded-lg object-cover w-full h-32" />
@@ -95,24 +99,26 @@ export default async function VictimaPage({ params }: { params: Promise<{ id: st
             </div>
           )}
 
-          <dl className="space-y-3 text-sm">
+          <dl className="space-y-4 text-sm" style={{ borderTop: '1px solid rgba(36,51,86,0.5)', paddingTop: '1.25rem' }}>
             <div>
-              <dt className="text-gray-500">Descripción física</dt>
-              <dd className="text-gray-900">{victim.physical_description}</dd>
+              <dt className="text-[10px] uppercase tracking-widest mb-0.5" style={{ color: '#64748B' }}>Descripción física</dt>
+              <dd style={{ color: '#d0d8f0' }}>{victim.physical_description}</dd>
             </div>
             <div>
-              <dt className="text-gray-500">Encontrada en</dt>
-              <dd className="text-gray-900">{victim.found_location}</dd>
+              <dt className="text-[10px] uppercase tracking-widest mb-0.5" style={{ color: '#64748B' }}>Encontrada en</dt>
+              <dd style={{ color: '#d0d8f0' }}>{victim.found_location}</dd>
             </div>
             {location && (
               <div>
-                <dt className="text-gray-500">Ubicación actual</dt>
-                <dd className="text-gray-900">
+                <dt className="text-[10px] uppercase tracking-widest mb-0.5" style={{ color: '#64748B' }}>Ubicación actual</dt>
+                <dd style={{ color: '#d0d8f0' }}>
                   {location.name}
-                  {location.address && <span className="text-gray-500"> — {location.address}</span>}
+                  {location.address && <span style={{ color: '#94A3B8' }}> — {location.address}</span>}
                   {location.phone && (
-                    <a href={`tel:${location.phone}`} className="block text-blue-600 hover:underline mt-0.5">
-                      📞 {location.phone}
+                    <a href={`tel:${location.phone}`} className="flex items-center gap-1 mt-0.5 hover:underline"
+                      style={{ color: '#D4A017' }}>
+                      <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>phone</span>
+                      {location.phone}
                     </a>
                   )}
                 </dd>
@@ -120,20 +126,25 @@ export default async function VictimaPage({ params }: { params: Promise<{ id: st
             )}
             {victim.estimated_age && (
               <div>
-                <dt className="text-gray-500">Edad estimada</dt>
-                <dd className="text-gray-900">{victim.estimated_age} años</dd>
+                <dt className="text-[10px] uppercase tracking-widest mb-0.5" style={{ color: '#64748B' }}>Edad estimada</dt>
+                <dd style={{ color: '#d0d8f0' }}>{victim.estimated_age} años</dd>
               </div>
             )}
             {victim.is_minor && (
               <div>
-                <dt className="text-gray-500">Protección</dt>
-                <dd><span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded font-medium">Menor de edad</span></dd>
+                <dt className="text-[10px] uppercase tracking-widest mb-0.5" style={{ color: '#64748B' }}>Protección especial</dt>
+                <dd>
+                  <span className="text-xs px-2 py-0.5 rounded font-medium"
+                    style={{ background: 'rgba(168,85,247,0.15)', color: '#A855F7', border: '1px solid rgba(168,85,247,0.3)' }}>
+                    Menor de edad
+                  </span>
+                </dd>
               </div>
             )}
             {victim.notes && (
               <div>
-                <dt className="text-gray-500">Notas médicas</dt>
-                <dd className="text-gray-900">{victim.notes}</dd>
+                <dt className="text-[10px] uppercase tracking-widest mb-0.5" style={{ color: '#64748B' }}>Notas médicas</dt>
+                <dd style={{ color: '#d0d8f0' }}>{victim.notes}</dd>
               </div>
             )}
           </dl>

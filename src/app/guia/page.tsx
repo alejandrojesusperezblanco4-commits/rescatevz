@@ -2,17 +2,22 @@ import Link from 'next/link'
 
 export default function GuiaPage() {
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
-      <div className="bg-red-600 text-white text-center py-2 text-sm font-medium">
-        Emergencia activa — Terremotos Venezuela 24 de junio 2026
+    <div className="min-h-screen flex flex-col" style={{ background: '#1a2744', color: '#F0F4FF' }}>
+      <div className="text-white text-center py-2 text-xs font-semibold uppercase tracking-widest"
+        style={{ background: '#DC2626' }}>
+        🚨 EMERGENCIA ACTIVA — Terremotos Venezuela · 24 jun 2026
       </div>
 
-      <header className="bg-gray-900 text-white px-6 py-4 flex items-center justify-between">
+      <header className="px-6 py-3 flex items-center justify-between"
+        style={{ background: '#162040', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-red-600 rounded-full flex items-center justify-center font-bold text-sm">RV</div>
-          <span className="font-bold text-lg">RescateVZ — Guía de uso</span>
+          <div className="w-8 h-8 rounded-full flex items-center justify-center font-black text-xs"
+            style={{ background: '#1e2d4a', border: '1.5px solid #D4A017', color: '#D4A017' }}>
+            RV
+          </div>
+          <span className="font-bold" style={{ fontFamily: 'Manrope, sans-serif' }}>Guía de uso</span>
         </div>
-        <Link href="/" className="text-sm text-gray-400 hover:text-white">← Inicio</Link>
+        <Link href="/" className="text-sm transition-colors hover:text-white" style={{ color: '#94A3B8' }}>← Inicio</Link>
       </header>
 
       <main className="flex-1 max-w-3xl mx-auto w-full px-4 py-10 space-y-10">
