@@ -14,7 +14,8 @@ Permite a rescatistas registrar víctimas encontradas, a familias buscar a sus s
 |---|---|
 | Framework | Next.js 16 (App Router, PWA) |
 | Base de datos / Auth | Supabase (PostgreSQL + RLS) |
-| Estilos | Tailwind CSS v4 |
+| Estilos | Tailwind CSS v4 + Google Fonts |
+| Iconos | Material Symbols Outlined (Google) |
 | Mapas | Leaflet + OpenStreetMap |
 | Agente IA | OpenRouter → `anthropic/claude-haiku-4.5` (texto + visión) |
 | WhatsApp | WAHA (WhatsApp HTTP API) |
@@ -22,6 +23,61 @@ Permite a rescatistas registrar víctimas encontradas, a familias buscar a sus s
 | QR | `qrcode` (generación server-side) |
 | Deploy | Railway |
 | Lenguaje | TypeScript |
+
+---
+
+## Sistema de diseño
+
+### Paleta oficial
+
+| Token | Color | Uso |
+|---|---|---|
+| `--background` | `#1a2744` | Fondo de página — azul marino profundo |
+| `--surface` | `#1e2d4a` | Cards, paneles, inputs |
+| Surface 2 | `#162040` | Header, footer, elementos más oscuros |
+| `--accent` | `#D4A017` | Ámbar dorado — **única CTA activa**. Botones primarios, links de acción, estados activos en nav |
+| `--alert` | `#DC2626` | Rojo — **solo alertas críticas**. Banner de emergencia, estado crítico, alertas admin |
+| Verde estado | `#22C55E` | "Con vida confirmada" únicamente |
+| Lila menores | `#A855F7` | Badge "Menor" — protección especial |
+| Gris estado | `#64748B` | "Fallecido" |
+| `--foreground` | `#F0F4FF` | Texto principal |
+| `--muted` | `#94A3B8` | Texto secundario, labels, metadata |
+| `--border` | `rgba(36,51,86,0.5)` | Bordes de cards |
+| Bandera VZ | `#FFD700 / #003893 / #CF142B` | Franja decorativa de 3px — no usar como fondo |
+
+### Tipografía
+
+| Fuente | Uso |
+|---|---|
+| **Manrope** (400–800) | Headlines, números de stats, logos, títulos de sección |
+| **Inter** (400–600) | Cuerpo, descripciones, labels, metadata |
+| **Material Symbols Outlined** | Todos los iconos UI — reemplaza emojis |
+
+Cargadas vía Google Fonts en `src/app/layout.tsx`.
+
+### Principios
+
+- **Ámbar como única CTA** — el color `#D4A017` es el único que indica acción. Nada más debe llamar la atención más que los botones ámbar.
+- **Rojo solo para emergencias** — no usar `red` para botones de registro, solo para alertas críticas y estados de riesgo de vida.
+- **Cards sobre oscuro** — `#1e2d4a` sobre `#1a2744`. Sin `bg-white` ni `bg-gray-50`.
+- **Borde izquierdo como indicador de estado** — stat cards con `border-left: 3px solid [color]` según el tipo de dato.
+- **Material Symbols en lugar de emojis** — más consistentes, escalables, con soporte de `font-variation-settings` para FILL y weight.
+- **No glassmorphism, no gradientes decorativos** — diseño plano con jerarquía de luminosidad tonal.
+
+### Override global CSS (`src/app/globals.css`)
+
+Para migrar gradualmente páginas que aún usan clases Tailwind de modo claro, `globals.css` incluye overrides globales que convierten automáticamente las clases antiguas:
+
+```css
+.bg-gray-50  → #1a2744   /* fondo de página */
+.bg-white    → #1e2d4a   /* cards */
+.text-gray-900 → #F0F4FF /* texto primario */
+.text-gray-500 → #7c8db5 /* texto muted */
+.border-gray-200 → rgba(36,51,86,0.5)
+/* inputs forzados a dark automáticamente */
+```
+
+Esto permite que páginas no migradas individualmente adopten el tema oscuro sin modificaciones.
 
 ---
 
@@ -103,16 +159,17 @@ UPDATE public.profiles SET phone = '+34XXXXXXXXX' WHERE email = 'tu@email.com';
 
 | Ruta | Acceso | Descripción |
 |---|---|---|
-| `/` | Todos | Landing con 4 accesos por rol + chat IA flotante |
-| `/login` `/registro` | Todos | Auth Supabase |
-| `/dashboard` | Autenticados | Stats en tiempo real + alertas admin + enlace Sincronizar |
+| `/` | Todos | Landing dark — headline impactante, 4 action cards horizontales con Material Symbols, stat counters animados, trust strip, footer con franja venezolana |
+| `/login` | Todos | Formulario dark — card navy, inputs oscuros, CTA ámbar |
+| `/registro` | Todos | Registro de cuenta con selección de rol |
+| `/dashboard` | Autenticados | Panel oscuro: 5 stat cards con borde de color, alertas admin, lista víctimas con avatares, hospitales con barras de capacidad |
 | `/victimas` | Staff | Lista con filtros (estado, ubicación, menor, texto) |
 | `/victimas/nueva` | Staff verificado | Formulario de registro + fotos |
 | `/victima/[id]` | Staff + familiar aprobado | Perfil completo + actualizar estado médico + QR + compartir + biométrico |
 | `/buscar` | Todos | Búsqueda pública segura (sin menores) + reporte de menores |
 | `/mis-solicitudes` | Family | Estado de sus peticiones de acceso |
-| `/mapa-publico` | Todos | Mapa Leaflet con hospitales y refugios activos |
-| `/primeros-auxilios` | Todos | Índice de 8 guías offline |
+| `/mapa-publico` | Todos | Mapa Leaflet con hospitales y refugios — sidebar dark con barras de capacidad y Material Symbols |
+| `/primeros-auxilios` | Todos | Índice de 8 guías offline — header consistente, cards dark con borde rojo en críticos, badge offline |
 | `/primeros-auxilios/[slug]` | Todos | RCP, hemorragia, shock, aplastamiento, fracturas, quemaduras, inconsciencia, asfixia |
 | `/solicitudes` | Admin | Aprobar / rechazar acceso familiar |
 | `/verificacion` | Admin | Verificar rescatistas y médicos pendientes |
@@ -121,6 +178,20 @@ UPDATE public.profiles SET phone = '+34XXXXXXXXX' WHERE email = 'tu@email.com';
 | `/sincronizacion` | Admin | Cruzar víctimas contra Venezuela Reporta |
 | `/whatsapp` | Todos | Instrucciones del bot y número de contacto |
 | `/guia` | Todos | Guía de uso por rol |
+
+---
+
+## Navegación autenticada (`Header.tsx`)
+
+El header compartido de páginas autenticadas muestra un máximo de 5–6 items por rol:
+
+| Rol | Nav visible |
+|---|---|
+| `admin` | Dashboard · Víctimas · Buscar · Mapa · Solicitudes · Verificar |
+| `rescuer` / `medical` | Dashboard · Víctimas · Buscar · Mapa |
+| `family` | Dashboard · Buscar · Mapa · Mis solicitudes |
+
+El botón **"Registrar"** (ámbar) aparece inline en el header para staff verificado y admin, para acceso rápido al formulario de víctimas sin navegar al dashboard.
 
 ---
 
@@ -327,11 +398,23 @@ Variables necesarias en el servicio WAHA de Railway: `WAHA_API_KEY`, `WAHA_SESSI
 
 ---
 
+## Deploy
+
+```bash
+railway up --service rescatevz
+```
+
+Railway construye automáticamente desde el directorio raíz. No requiere Dockerfile. El comando `start` en `package.json` ejecuta `next start`.
+
+Variables de entorno gestionadas desde Railway → Project → Service → Variables.
+
+---
+
 ## Equipo
 
 | Persona | GitHub | Área |
 |---|---|---|
-| Alejandro | alejandrojesusperezblanco4-commits | Arquitectura, backend, Supabase, infra Railway, agente IA, integraciones |
+| Alejandro | alejandrojesusperezblanco4-commits | Arquitectura, backend, Supabase, infra Railway, agente IA, integraciones, diseño |
 | Amir | amiralimustafap-source | Frontend, seguridad, búsqueda pública, panel menores, acceso familiar |
 
 ---
@@ -339,6 +422,7 @@ Variables necesarias en el servicio WAHA de Railway: `WAHA_API_KEY`, `WAHA_SESSI
 ## Pendiente (próximos sprints)
 
 - [ ] Dominio propio (rescatevz.org o similar)
+- [ ] Migrar resto de páginas internas al nuevo tema dark (solicitudes, verificacion, victima/[id], registro)
 - [ ] Notificaciones push a familias cuando se aprueba su solicitud
 - [ ] Publicar víctimas automáticamente en Venezuela Reporta al registrarlas (requiere API key de escritura)
 - [ ] Migrar matching biométrico a AWS Rekognition para escalar a miles de víctimas
