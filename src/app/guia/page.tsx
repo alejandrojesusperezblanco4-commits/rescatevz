@@ -148,8 +148,8 @@ export default function GuiaPage() {
         <div className="bg-gray-100 rounded-xl p-6 text-center">
           <p className="text-sm text-gray-600">
             ¿Problemas o preguntas? Contacta al equipo de RescateVZ en{' '}
-            <a href="mailto:alejandrojesusperezblanco4@gmail.com" className="text-red-600 hover:underline font-medium">
-              alejandrojesusperezblanco4@gmail.com
+            <a href="mailto:contacto@rescate-vz.com" className="text-red-600 hover:underline font-medium">
+              contacto@rescate-vz.com
             </a>
           </p>
         </div>

@@ -11,7 +11,7 @@ interface NotifyPayload {
 }
 
 function buildHtml(p: NotifyPayload): { subject: string; html: string } {
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://kind-balance-production-5137.up.railway.app'
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://rescate-vz.com'
   const victimLabel = p.victimName || 'la persona registrada'
 
   if (p.decision === 'approved') {

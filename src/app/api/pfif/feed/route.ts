@@ -8,7 +8,7 @@ function getSupabase() {
   )
 }
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://kind-balance-production-5137.up.railway.app'
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://rescate-vz.com'
 const SOURCE_NAME = 'RescateVZ'
 const EXPIRY = '2028-12-31T00:00:00Z'
 
