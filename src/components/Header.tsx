@@ -39,14 +39,9 @@ export default function Header({ profile }: HeaderProps) {
     <header className="sticky top-0 z-50" style={{ background: '#162040', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
       <div className="max-w-6xl mx-auto px-4 flex items-center justify-between h-14">
         <div className="flex items-center gap-6">
-          <Link href="/dashboard" className="flex items-center gap-2 font-bold text-base shrink-0">
-            <div
-              className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold"
-              style={{ background: '#1e2d4a', border: '1.5px solid #D4A017', color: '#D4A017', fontFamily: 'Manrope, sans-serif' }}
-            >
-              RV
-            </div>
-            <span style={{ color: '#F0F4FF', fontFamily: 'Manrope, sans-serif' }}>RescateVZ</span>
+          <Link href="/dashboard" className="flex items-center gap-2 shrink-0">
+            <img src="/favicon.svg" alt="RescateVZ" className="w-7 h-7" />
+            <span className="font-bold text-base" style={{ color: '#F0F4FF', fontFamily: 'Manrope, sans-serif' }}>RescateVZ</span>
           </Link>
           <nav className="hidden sm:flex items-center gap-1">
             {visibleNav.map(item => (

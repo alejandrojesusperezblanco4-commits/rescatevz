@@ -56,70 +56,14 @@ export default async function DashboardPage() {
     <div className="min-h-screen flex flex-col antialiased"
       style={{ background: '#1a2744', color: '#F0F4FF', fontFamily: "'Manrope', sans-serif" }}>
 
-      {/* 1. Topbar alerta fija */}
-      <div className="h-8 text-white flex items-center justify-center uppercase tracking-wider text-xs fixed top-0 w-full z-[60]"
+      <div className="text-white text-center py-2 text-xs font-semibold uppercase tracking-widest"
         style={{ background: '#DC2626' }}>
-        <div className="w-2 h-2 rounded-full bg-white mr-2 animate-pulse" />
-        EMERGENCIA ACTIVA · Terremotos Venezuela · 24 jun 2026
+        🚨 EMERGENCIA ACTIVA — Terremotos Venezuela · 24 jun 2026
       </div>
 
-      {/* 2. Header / Navbar */}
-      <header className="shadow-md flex justify-between items-center w-full px-8 h-16 fixed top-8 z-50 border-b"
-        style={{ background: '#1e2d4a', borderColor: 'rgba(36,51,86,0.5)' }}>
-        <div className="flex items-center gap-6">
-          <div className="flex items-center gap-3">
-            <div className="h-8 w-8 rounded-full flex items-center justify-center font-black text-xs shrink-0"
-              style={{ background: '#D4A017', color: '#1a2744' }}>
-              RV
-            </div>
-            <span className="font-bold text-base" style={{ color: '#F0F4FF' }}>RescateVZ</span>
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border"
-              style={{ background: 'rgba(212,160,23,0.15)', color: '#D4A017', borderColor: 'rgba(212,160,23,0.3)' }}>
-              {profile.role === 'admin' ? 'Admin' : profile.role === 'rescuer' ? 'Rescatista' : profile.role === 'medical' ? 'Médico' : 'Familia'}
-            </span>
-          </div>
-          <nav className="hidden md:flex items-center gap-6 h-full font-semibold text-sm">
-            <Link href="/dashboard" className="border-b-2 h-16 flex items-center px-1"
-              style={{ color: '#D4A017', borderColor: '#D4A017' }}>
-              Dashboard
-            </Link>
-            {['rescuer', 'medical', 'admin'].includes(profile.role) && (
-              <Link href="/victimas" className="h-16 flex items-center px-1 transition-colors hover:text-white"
-                style={{ color: '#94A3B8' }}>Víctimas</Link>
-            )}
-            <Link href="/mapa-publico" className="h-16 flex items-center px-1 transition-colors hover:text-white"
-              style={{ color: '#94A3B8' }}>Mapa</Link>
-            {profile.role === 'admin' && (
-              <>
-                <Link href="/ubicaciones" className="h-16 flex items-center px-1 transition-colors hover:text-white"
-                  style={{ color: '#94A3B8' }}>Ubicaciones</Link>
-                <Link href="/solicitudes" className="h-16 flex items-center px-1 transition-colors hover:text-white"
-                  style={{ color: '#94A3B8' }}>Solicitudes</Link>
-              </>
-            )}
-          </nav>
-        </div>
+      <Header profile={profile as Profile} />
 
-        <div className="flex items-center gap-4">
-          <div className="hidden sm:flex items-center gap-3 text-right">
-            <div>
-              <div className="text-sm font-semibold" style={{ color: '#F0F4FF' }}>{profile.full_name}</div>
-              <div className="text-[11px]" style={{ color: '#94A3B8' }}>(Admin)</div>
-            </div>
-          </div>
-          {canRegister && (
-            <Link href="/victimas/nueva"
-              className="px-4 py-2 rounded-md font-bold flex items-center gap-2 transition-all hover:brightness-110 active:scale-95 text-sm"
-              style={{ background: '#D4A017', color: '#1a2744' }}>
-              <span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>add</span>
-              Registrar víctima
-            </Link>
-          )}
-        </div>
-      </header>
-
-      {/* Main — pt-28 = top-8 (alert bar) + h-16 (header) */}
-      <main className="flex-grow pt-28 px-4 md:px-8 pb-12 flex flex-col gap-6 w-full max-w-7xl mx-auto">
+      <main className="flex-grow px-4 md:px-8 pb-12 pt-6 flex flex-col gap-6 w-full max-w-7xl mx-auto">
 
         {/* Verificación pendiente */}
         {!profile.is_verified && profile.role !== 'family' && (

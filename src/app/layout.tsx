@@ -7,6 +7,11 @@ export const metadata: Metadata = {
   title: 'RescateVZ — Registro de víctimas',
   description: 'Plataforma humanitaria para registrar y localizar víctimas del terremoto de Venezuela 2026',
   manifest: '/manifest.json',
+  icons: {
+    icon: '/favicon.svg',
+    shortcut: '/favicon.svg',
+    apple: '/favicon.svg',
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',

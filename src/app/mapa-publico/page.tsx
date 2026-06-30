@@ -1,10 +1,16 @@
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
-import type { Location } from '@/lib/types'
+import type { Location, Profile } from '@/lib/types'
 import MapaClientWrapper from '@/components/MapaClientWrapper'
+import Header from '@/components/Header'
 
 export default async function MapaPublicoPage() {
   const supabase = await createClient()
+
+  const { data: { user } } = await supabase.auth.getUser()
+  const { data: profile } = user
+    ? await supabase.from('profiles').select('*').eq('id', user.id).single()
+    : { data: null }
 
   const { data: locations } = await supabase
     .from('locations')
@@ -42,24 +48,28 @@ export default async function MapaPublicoPage() {
         🚨 EMERGENCIA ACTIVA — Terremotos Venezuela · 24 jun 2026
       </div>
 
-      <header className="px-6 py-3 flex items-center justify-between"
-        style={{ background: '#162040', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full flex items-center justify-center font-black text-xs"
-            style={{ background: '#1e2d4a', border: '1.5px solid #D4A017', color: '#D4A017' }}>
-            RV
+      {profile ? (
+        <Header profile={profile as Profile} />
+      ) : (
+        <header className="px-6 py-3 flex items-center justify-between"
+          style={{ background: '#162040', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-full flex items-center justify-center font-black text-xs"
+              style={{ background: '#1e2d4a', border: '1.5px solid #D4A017', color: '#D4A017' }}>
+              RV
+            </div>
+            <span className="font-bold" style={{ fontFamily: 'Manrope, sans-serif' }}>Mapa de emergencia</span>
           </div>
-          <span className="font-bold" style={{ fontFamily: 'Manrope, sans-serif' }}>Mapa de emergencia</span>
-        </div>
-        <div className="flex gap-4">
-          <Link href="/buscar" className="text-sm transition-colors hover:text-white" style={{ color: '#94A3B8' }}>
-            Buscar familiar
-          </Link>
-          <Link href="/" className="text-sm transition-colors hover:text-white" style={{ color: '#64748B' }}>
-            ← Inicio
-          </Link>
-        </div>
-      </header>
+          <div className="flex gap-4">
+            <Link href="/buscar" className="text-sm transition-colors hover:text-white" style={{ color: '#94A3B8' }}>
+              Buscar familiar
+            </Link>
+            <Link href="/" className="text-sm transition-colors hover:text-white" style={{ color: '#64748B' }}>
+              ← Inicio
+            </Link>
+          </div>
+        </header>
+      )}
 
       <div className="flex-1 flex flex-col lg:flex-row">
         <div className="flex-1 h-[60vh] lg:h-auto p-3">
