@@ -36,10 +36,42 @@ interface BatchResult {
   checked: number
 }
 
+interface SitiosResult {
+  ok: boolean
+  total: number
+  inserted: number
+  skipped: number
+  message: string
+}
+
 export default function SincronizacionPage() {
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<BatchResult | null>(null)
   const [error, setError] = useState<string | null>(null)
+
+  const [sitiosLoading, setSitiosLoading] = useState(false)
+  const [sitiosResult, setSitiosResult] = useState<SitiosResult | null>(null)
+  const [sitiosError, setSitiosError] = useState<string | null>(null)
+
+  async function importarSitios() {
+    setSitiosLoading(true)
+    setSitiosError(null)
+    setSitiosResult(null)
+    try {
+      const res = await fetch('/api/sync/sitios', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ soloActivos: true }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || `Error ${res.status}`)
+      setSitiosResult(data)
+    } catch (e: unknown) {
+      setSitiosError(e instanceof Error ? e.message : String(e))
+    } finally {
+      setSitiosLoading(false)
+    }
+  }
 
   async function runSync() {
     setLoading(true)
@@ -76,10 +108,62 @@ export default function SincronizacionPage() {
         </p>
       </div>
 
+      {/* — Importar hospitales y refugios — */}
+      <div className="rounded-lg p-5 mb-6" style={{ background: '#1e2d4a', border: '1px solid rgba(36,51,86,0.5)' }}>
+        <div className="flex items-start gap-4">
+          <div className="flex-1">
+            <h2 className="font-semibold mb-1" style={{ color: '#F0F4FF' }}>
+              Importar hospitales y refugios
+            </h2>
+            <p className="text-sm" style={{ color: '#94A3B8' }}>
+              Descarga los sitios activos (hospitales, refugios, centros de acopio) de Venezuela Reporta
+              e impórtalos directamente a la base de datos de RescateVZ. Solo se añaden ubicaciones nuevas.
+            </p>
+          </div>
+          <button
+            onClick={importarSitios}
+            disabled={sitiosLoading}
+            className="shrink-0 px-4 py-2 rounded-lg text-sm font-bold transition-all hover:brightness-110 disabled:opacity-50 flex items-center gap-2"
+            style={{ background: '#D4A017', color: '#1a2744' }}
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: '16px', fontVariationSettings: "'FILL' 1" }}>
+              download
+            </span>
+            {sitiosLoading ? 'Importando…' : 'Importar sitios'}
+          </button>
+        </div>
+
+        {sitiosError && (
+          <div className="mt-4 text-sm px-3 py-2 rounded-lg"
+            style={{ background: 'rgba(220,38,38,0.10)', border: '1px solid rgba(220,38,38,0.3)', color: '#FCA5A5' }}>
+            {sitiosError}
+          </div>
+        )}
+
+        {sitiosResult && (
+          <div className="mt-4 flex items-center gap-4">
+            <div className="rounded-lg px-4 py-3 text-center"
+              style={{ background: '#162040', border: '1px solid rgba(36,51,86,0.5)' }}>
+              <div className="text-2xl font-black tabular-nums" style={{ color: '#D4A017' }}>{sitiosResult.inserted}</div>
+              <div className="text-xs mt-0.5" style={{ color: '#94A3B8' }}>nuevas ubicaciones</div>
+            </div>
+            <div className="rounded-lg px-4 py-3 text-center"
+              style={{ background: '#162040', border: '1px solid rgba(36,51,86,0.5)' }}>
+              <div className="text-2xl font-black tabular-nums" style={{ color: '#64748B' }}>{sitiosResult.skipped}</div>
+              <div className="text-xs mt-0.5" style={{ color: '#94A3B8' }}>ya existían</div>
+            </div>
+            <p className="text-sm flex-1" style={{ color: sitiosResult.inserted > 0 ? '#22C55E' : '#94A3B8' }}>
+              {sitiosResult.message}
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* — Cruce de víctimas — */}
       <div className="rounded-lg p-5 mb-8" style={{ background: '#1e2d4a', border: '1px solid rgba(36,51,86,0.5)' }}>
         <div className="flex items-start gap-4">
           <div className="flex-1">
-            <h2 className="font-semibold mb-1" style={{ color: '#F0F4FF' }}>Venezuela Reporta</h2>
+            <h2 className="font-semibold mb-1" style={{ color: '#F0F4FF' }}>Cruzar víctimas con Venezuela Reporta</h2>
             <p className="text-sm" style={{ color: '#94A3B8' }}>
               API pública con registros de personas buscadas, ingresos hospitalarios y sitios de atención.
               Lectura libre · Sin autenticación · Atribución obligatoria.
@@ -89,7 +173,7 @@ export default function SincronizacionPage() {
             onClick={runSync}
             disabled={loading}
             className="shrink-0 px-4 py-2 rounded-lg text-sm font-bold transition-all hover:brightness-110 disabled:opacity-50"
-            style={{ background: '#D4A017', color: '#1a2744' }}
+            style={{ background: '#1a2744', color: '#D4A017', border: '1px solid rgba(212,160,23,0.4)' }}
           >
             {loading ? 'Buscando…' : 'Buscar coincidencias'}
           </button>

@@ -17,7 +17,7 @@ const STATUS_LABELS: Record<string, string> = {
 }
 
 const SYSTEM_PROMPT = `Eres RescateVZ, un asistente de emergencias humanitarias para el terremoto en Venezuela (junio 2026).
-Ayudas a rescatistas, médicos y familias por WhatsApp.
+Ayudas a rescatistas, médicos y familias a través del chat de la plataforma.
 
 CAPACIDADES:
 1. Registrar víctimas rescatadas (solo rescatistas/médicos/admins verificados)
@@ -26,9 +26,9 @@ CAPACIDADES:
 4. Informar sobre hospitales y refugios activos
 
 REGLAS:
-- Sé muy conciso. WhatsApp tiene pantalla pequeña.
+- Sé conciso y claro. El usuario puede estar en una situación de estrés.
 - Para registrar víctimas, extrae: nombre (puede ser null), descripción física, estado (alive/critical/deceased/unknown), lugar donde fue encontrada, hospital/refugio actual, edad estimada.
-- Las búsquedas de menores (<18 años) no están disponibles públicamente por protección. Indica que deben ir a la app web.
+- Las búsquedas de menores (<18 años) no están disponibles públicamente por protección. Indica que deben ir a /buscar e identificarse.
 - Si el usuario no tiene permisos para una acción, explícalo brevemente.
 - Responde siempre en español.
 - Cuando registres una víctima exitosamente, confirma con el ID corto.`
@@ -247,10 +247,10 @@ function buildHelp(role: UserRole | null): string {
     '🤖 *RescateVZ — Bot de emergencias*',
     '',
     'Puedo ayudarte con:',
-    '🦺 *Registrar víctima* — Describe a la persona rescatada',
-    '🔍 *Buscar persona* — "busca a [nombre]"',
-    '🩺 *Primeros auxilios* — "cómo hacer RCP", "qué hacer con hemorragia"',
-    '🏥 *Hospitales y refugios* — "dónde hay hospitales activos"',
+    'Registrar víctima — Describe a la persona rescatada',
+    'Buscar persona — "busca a [nombre]"',
+    'Primeros auxilios — "cómo hacer RCP", "qué hacer con hemorragia"',
+    'Hospitales y refugios — "dónde hay hospitales activos"',
   ]
 
   if (!role) {

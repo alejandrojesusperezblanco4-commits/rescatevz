@@ -55,9 +55,9 @@ export default async function LandingPage() {
                 style={{ color: '#c5c6ce' }}>
                 Guía de uso
               </Link>
-              <Link href="/whatsapp" className="font-medium transition-colors hover:text-yellow-400"
+              <Link href="/primeros-auxilios" className="font-medium transition-colors hover:text-yellow-400"
                 style={{ color: '#c5c6ce' }}>
-                Bot WhatsApp
+                Primeros auxilios
               </Link>
             </div>
           </div>
@@ -137,7 +137,7 @@ export default async function LandingPage() {
                 Soy rescatista
               </h3>
               <p className="mb-4" style={{ color: '#c5c6ce', fontSize: '16px', lineHeight: 1.6 }}>
-                Registra víctimas desde campo o por WhatsApp. Herramientas para brigadas y voluntarios.
+                Registra víctimas desde campo. Formulario web optimizado para móvil y chat IA integrado.
               </p>
               <div className="px-6 py-2 rounded font-bold uppercase text-sm inline-block"
                 style={{ background: '#D4A017', color: '#402d00' }}>
@@ -212,8 +212,8 @@ export default async function LandingPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-12 text-center">
             {[
               { icon: 'security', title: 'Privacidad ante todo', desc: 'Datos encriptados. Solo personal autorizado y familiares directos pueden ver detalles sensibles.' },
-              { icon: 'signal_wifi_off', title: 'Funciona sin internet', desc: 'Tecnología de sincronización asíncrona para zonas con baja o nula cobertura celular.' },
-              { icon: 'chat', title: 'Bot de WhatsApp', desc: 'Reporta y busca a través de nuestro bot oficial. Bajo consumo de datos y máxima rapidez.' },
+              { icon: 'signal_wifi_off', title: 'Funciona sin internet', desc: 'Las guías de primeros auxilios y el mapa se cachean localmente para usarse en campo sin señal.' },
+              { icon: 'smart_toy', title: 'Chat IA integrado', desc: 'Asistente inteligente disponible 24/7 para registrar víctimas, buscar personas y guías médicas.' },
             ].map(item => (
               <div key={item.icon} className="flex flex-col items-center">
                 <div className="w-12 h-12 rounded-full flex items-center justify-center mb-4"
@@ -249,7 +249,7 @@ export default async function LandingPage() {
             </p>
           </div>
           <div className="grid grid-cols-2 gap-x-12 gap-y-2">
-            {[['Protocolos', '/primeros-auxilios'], ['Privacidad', '/guia'], ['Contacto', '/whatsapp'], ['Soporte', '/guia']].map(([label, href]) => (
+            {[['Protocolos', '/primeros-auxilios'], ['Privacidad', '/guia'], ['Mapa', '/mapa-publico'], ['Guía', '/guia']].map(([label, href]) => (
               <Link key={label} href={href}
                 className="uppercase hover:text-yellow-400 transition-colors"
                 style={{ fontSize: '11px', letterSpacing: '0.15em', color: '#c5c6ce' }}>
