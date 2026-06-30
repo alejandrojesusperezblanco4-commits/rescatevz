@@ -21,6 +21,26 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  /* Espacio para el bottom tab bar en móvil */
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* En móvil, el contenido principal necesita espacio para el bottom nav */
+@media (max-width: 639px) {
+  main {
+    padding-bottom: calc(4.5rem + env(safe-area-inset-bottom)) !important;
+  }
+}
+
+/* Mejor experiencia táctil */
+a, button {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+/* Evitar scroll horizontal en móvil */
+html, body {
+  overflow-x: hidden;
 }
 
 /* ───── Dark theme global overrides ───── */
