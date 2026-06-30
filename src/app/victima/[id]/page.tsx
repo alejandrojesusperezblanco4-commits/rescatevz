@@ -22,13 +22,11 @@ export default async function VictimaPage({ params }: { params: Promise<{ id: st
 
   // RLS decide si esta fila existe para este usuario: staff autorizado, o
   // un familiar con access_request aprobado y vigente para esta víctima.
-  const canUpdate = ['admin', 'medical'].includes(profile.role)
-
   const { data: victim, error } = await supabase
     .from('victims')
     .select(`
       id, name, physical_description, is_minor, status, estimated_age,
-      found_location, notes, photo_urls, current_location_id,
+      found_location, notes, photo_urls, current_location_id, created_by,
       current_location:locations(id, name, type, address, phone)
     `)
     .eq('id', id)
@@ -37,6 +35,10 @@ export default async function VictimaPage({ params }: { params: Promise<{ id: st
   if (error || !victim) {
     redirect('/mis-solicitudes')
   }
+
+  // Rescatistas verificados pueden actualizar víctimas que ellos registraron
+  const canUpdate = ['admin', 'medical'].includes(profile.role)
+    || (profile.role === 'rescuer' && profile.is_verified && victim.created_by === user.id)
 
   let photoUrls: string[] = []
   const paths = (victim.photo_urls || []) as string[]
@@ -157,6 +159,7 @@ export default async function VictimaPage({ params }: { params: Promise<{ id: st
               currentNotes={victim.notes}
               locations={locations}
               userId={user.id}
+              isRescuer={profile.role === 'rescuer'}
             />
           )}
 

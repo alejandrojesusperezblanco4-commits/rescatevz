@@ -19,15 +19,18 @@ interface ActualizarVictimaFormProps {
   currentNotes: string | null
   locations: Location[]
   userId: string
+  isRescuer?: boolean
 }
 
+const STATUS_OPTIONS: { value: VictimStatus; icon: string; color: string; bg: string; border: string }[] = [
+  { value: 'alive',    icon: 'check_circle', color: '#22C55E', bg: 'rgba(34,197,94,0.15)',   border: '#22C55E' },
+  { value: 'critical', icon: 'emergency',    color: '#F97316', bg: 'rgba(249,115,22,0.15)',  border: '#F97316' },
+  { value: 'deceased', icon: 'cancel',       color: '#64748B', bg: 'rgba(100,116,139,0.15)', border: '#64748B' },
+  { value: 'unknown',  icon: 'help',         color: '#D4A017', bg: 'rgba(212,160,23,0.15)',  border: '#D4A017' },
+]
+
 export default function ActualizarVictimaForm({
-  victimId,
-  currentStatus,
-  currentLocationId,
-  currentNotes,
-  locations,
-  userId,
+  victimId, currentStatus, currentLocationId, currentNotes, locations, userId, isRescuer = false,
 }: ActualizarVictimaFormProps) {
   const router = useRouter()
   const [status, setStatus] = useState<VictimStatus>(currentStatus)
@@ -51,11 +54,7 @@ export default function ActualizarVictimaForm({
     const supabase = createClient()
     const { error: updateError } = await supabase
       .from('victims')
-      .update({
-        status,
-        current_location_id: locationId || null,
-        notes: notes.trim() || null,
-      })
+      .update({ status, current_location_id: locationId || null, notes: notes.trim() || null })
       .eq('id', victimId)
 
     if (updateError) {
@@ -74,81 +73,76 @@ export default function ActualizarVictimaForm({
 
     setSuccess(true)
     setLoading(false)
-    setTimeout(() => {
-      setSuccess(false)
-      setOpen(false)
-      router.refresh()
-    }, 1500)
+    setTimeout(() => { setSuccess(false); setOpen(false); router.refresh() }, 1500)
   }
 
   if (!open) {
     return (
-      <button
-        onClick={() => setOpen(true)}
-        className="w-full mt-4 border-2 border-dashed border-gray-200 hover:border-red-300 text-gray-500 hover:text-red-600 rounded-xl py-3 text-sm font-medium transition-colors"
-      >
-        ✏️ Actualizar estado médico
+      <button onClick={() => setOpen(true)}
+        className="w-full mt-5 py-3 text-sm font-medium rounded-xl border-2 border-dashed transition-all hover:brightness-110"
+        style={{ borderColor: 'rgba(212,160,23,0.3)', color: '#D4A017' }}>
+        <span className="material-symbols-outlined align-middle mr-1" style={{ fontSize: '16px' }}>edit</span>
+        {isRescuer ? 'Actualizar desde campo' : 'Actualizar estado médico'}
       </button>
     )
   }
 
   return (
-    <div className="mt-4 bg-blue-50 border border-blue-200 rounded-xl p-5">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="font-semibold text-blue-900">Actualizar estado médico</h2>
-        <button onClick={() => setOpen(false)} className="text-blue-400 hover:text-blue-600 text-xl leading-none">×</button>
+    <div className="mt-5 rounded-xl p-5"
+      style={{ background: '#162040', border: '1px solid rgba(212,160,23,0.25)' }}>
+      <div className="flex items-center justify-between mb-5">
+        <h2 className="font-semibold" style={{ fontFamily: 'Manrope, sans-serif', color: '#F0F4FF' }}>
+          {isRescuer ? 'Actualizar desde campo' : 'Actualizar estado médico'}
+        </h2>
+        <button onClick={() => setOpen(false)} style={{ color: '#64748B', fontSize: '20px', lineHeight: 1 }}>×</button>
       </div>
 
       {success ? (
-        <div className="text-center py-4">
-          <div className="text-3xl mb-2">✅</div>
-          <p className="text-sm font-medium text-green-700">Actualizado correctamente</p>
+        <div className="text-center py-6">
+          <span className="material-symbols-outlined text-5xl block mb-2" style={{ color: '#22C55E', fontVariationSettings: "'FILL' 1" }}>check_circle</span>
+          <p className="text-sm font-medium" style={{ color: '#22C55E' }}>Actualizado correctamente</p>
         </div>
       ) : (
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Estado de salud */}
+        <form onSubmit={handleSubmit} className="space-y-5">
+          {/* Estado */}
           <div>
-            <label className="block text-sm font-medium text-blue-900 mb-2">Estado de salud</label>
+            <label className="block text-xs uppercase tracking-widest mb-2" style={{ color: '#64748B' }}>
+              Estado de salud
+            </label>
             <div className="grid grid-cols-2 gap-2">
-              {(['alive', 'critical', 'deceased', 'unknown'] as VictimStatus[]).map(s => (
-                <button
-                  key={s}
-                  type="button"
-                  onClick={() => setStatus(s)}
-                  className={`py-2.5 px-3 text-sm font-medium rounded-lg border transition-colors text-left ${
-                    status === s
-                      ? s === 'alive' ? 'bg-green-600 text-white border-green-600'
-                        : s === 'critical' ? 'bg-orange-500 text-white border-orange-500'
-                        : s === 'deceased' ? 'bg-gray-600 text-white border-gray-600'
-                        : 'bg-yellow-500 text-white border-yellow-500'
-                      : 'bg-white text-gray-600 border-gray-300 hover:border-gray-400'
-                  }`}
-                >
-                  {s === 'alive' ? '✅' : s === 'critical' ? '🟠' : s === 'deceased' ? '⚫' : '❓'}{' '}
-                  {STATUS_LABELS[s]}
+              {STATUS_OPTIONS.map(opt => (
+                <button key={opt.value} type="button" onClick={() => setStatus(opt.value)}
+                  className="py-2.5 px-3 text-sm font-semibold rounded-lg border-2 text-left flex items-center gap-2 transition-all"
+                  style={status === opt.value
+                    ? { background: opt.bg, borderColor: opt.border, color: opt.color }
+                    : { background: 'transparent', borderColor: 'rgba(36,51,86,0.5)', color: '#94A3B8' }
+                  }>
+                  <span className="material-symbols-outlined" style={{ fontSize: '16px', fontVariationSettings: "'FILL' 1" }}>
+                    {opt.icon}
+                  </span>
+                  {STATUS_LABELS[opt.value]}
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Ubicación actual */}
+          {/* Ubicación */}
           <div>
-            <label className="block text-sm font-medium text-blue-900 mb-1">Ubicación actual</label>
-            <select
-              value={locationId}
-              onChange={e => setLocationId(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
+            <label className="block text-xs uppercase tracking-widest mb-1.5" style={{ color: '#64748B' }}>
+              Ubicación actual
+            </label>
+            <select value={locationId} onChange={e => setLocationId(e.target.value)}
+              className="w-full rounded-lg px-3 py-2.5 text-sm">
               <option value="">Sin ubicación asignada</option>
               {locations.filter(l => l.type === 'hospital').length > 0 && (
-                <optgroup label="🏥 Hospitales">
+                <optgroup label="Hospitales">
                   {locations.filter(l => l.type === 'hospital').map(l => (
                     <option key={l.id} value={l.id}>{l.name}</option>
                   ))}
                 </optgroup>
               )}
               {locations.filter(l => l.type === 'shelter').length > 0 && (
-                <optgroup label="🏕️ Refugios">
+                <optgroup label="Refugios y acopios">
                   {locations.filter(l => l.type === 'shelter').map(l => (
                     <option key={l.id} value={l.id}>{l.name}</option>
                   ))}
@@ -157,37 +151,36 @@ export default function ActualizarVictimaForm({
             </select>
           </div>
 
-          {/* Notas médicas */}
+          {/* Notas */}
           <div>
-            <label className="block text-sm font-medium text-blue-900 mb-1">Notas médicas</label>
-            <textarea
-              value={notes}
-              onChange={e => setNotes(e.target.value)}
-              rows={3}
-              placeholder="Diagnóstico, medicación, observaciones del médico…"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            <label className="block text-xs uppercase tracking-widest mb-1.5" style={{ color: '#64748B' }}>
+              {isRescuer ? 'Notas de campo' : 'Notas médicas'}
+            </label>
+            <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={3}
+              className="w-full rounded-lg px-3 py-2.5 text-sm"
+              placeholder={isRescuer
+                ? 'Estado cuando fue encontrada, condiciones, notas del rescate…'
+                : 'Diagnóstico, medicación, observaciones clínicas…'
+              }
             />
           </div>
 
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-3 py-2 rounded-lg">
+            <div className="text-sm px-3 py-2 rounded-lg"
+              style={{ background: 'rgba(220,38,38,0.10)', border: '1px solid rgba(220,38,38,0.3)', color: '#FCA5A5' }}>
               {error}
             </div>
           )}
 
           <div className="flex gap-3">
-            <button
-              type="submit"
-              disabled={loading || !changed}
-              className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-medium py-2.5 rounded-lg text-sm transition-colors"
-            >
+            <button type="submit" disabled={loading || !changed}
+              className="flex-1 font-bold py-2.5 rounded-lg text-sm transition-all hover:brightness-110 disabled:opacity-50"
+              style={{ background: '#D4A017', color: '#1a2744' }}>
               {loading ? 'Guardando…' : 'Guardar cambios'}
             </button>
-            <button
-              type="button"
-              onClick={() => setOpen(false)}
-              className="border border-gray-300 text-gray-600 px-4 py-2.5 rounded-lg text-sm hover:bg-gray-50 transition-colors"
-            >
+            <button type="button" onClick={() => setOpen(false)}
+              className="px-4 py-2.5 rounded-lg text-sm transition-colors hover:brightness-110"
+              style={{ border: '1px solid rgba(36,51,86,0.7)', color: '#94A3B8' }}>
               Cancelar
             </button>
           </div>

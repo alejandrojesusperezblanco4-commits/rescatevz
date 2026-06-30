@@ -410,3 +410,22 @@ CREATE POLICY "minor_inquiries: insertar"
     AND id_document_url IS NOT NULL
     AND length(id_document_url) > 0
   );
+
+-- ============================================================
+-- MIGRACIÓN: rescatistas pueden actualizar sus propias víctimas
+-- Ejecutar en Supabase SQL Editor
+-- ============================================================
+
+DROP POLICY IF EXISTS "victims: actualizar (rescuer propio)" ON public.victims;
+CREATE POLICY "victims: actualizar (rescuer propio)"
+  ON public.victims FOR UPDATE
+  USING (
+    public.is_verified_staff()
+    AND public.current_user_role() = 'rescuer'
+    AND created_by = auth.uid()
+  )
+  WITH CHECK (
+    public.is_verified_staff()
+    AND public.current_user_role() = 'rescuer'
+    AND created_by = auth.uid()
+  );
