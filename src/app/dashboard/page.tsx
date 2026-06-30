@@ -141,7 +141,10 @@ export default async function DashboardPage() {
               <h2 className="font-semibold text-gray-900">Hospitales y refugios</h2>
               <div className="flex gap-3">
                 {profile.role === 'admin' && (
-                  <Link href="/ubicaciones" className="text-sm text-gray-500 hover:text-gray-700 hover:underline">Gestionar</Link>
+                  <>
+                    <Link href="/sincronizacion" className="text-sm text-blue-600 hover:underline">Sincronizar</Link>
+                    <Link href="/ubicaciones" className="text-sm text-gray-500 hover:text-gray-700 hover:underline">Gestionar</Link>
+                  </>
                 )}
                 <Link href="/mapa-publico" className="text-sm text-red-600 hover:underline">Ver mapa</Link>
               </div>
