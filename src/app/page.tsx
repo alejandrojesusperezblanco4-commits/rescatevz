@@ -48,6 +48,10 @@ export default async function LandingPage() {
               </span>
             </div>
             <div className="hidden md:flex gap-6">
+              <Link href="/noticias" className="font-medium transition-colors hover:text-yellow-400"
+                style={{ color: '#c5c6ce' }}>
+                Noticias
+              </Link>
               <Link href="/guia" className="font-medium transition-colors hover:text-yellow-400"
                 style={{ color: '#c5c6ce' }}>
                 Guía de uso

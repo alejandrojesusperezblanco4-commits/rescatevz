@@ -21,12 +21,14 @@ function getBottomTabs(role: string, canRegister: boolean) {
   const myReqs  = { href: '/mis-solicitudes',icon: 'pending_actions',label: 'Solicitudes' }
   const structs = { href: '/estructuras',    icon: 'apartment',     label: 'Estructuras' }
 
-  if (role === 'admin')    return [home, victims, map, requests, verify]
-  if (role === 'rescuer')  return canRegister ? [home, victims, search, map] : [home, search, map]
-  if (role === 'medical')  return [home, victims, search, map]
-  if (role === 'family')   return [home, search, map, myReqs]
-  if (role === 'engineer') return [home, structs, map, search]
-  return [home, search, map]
+  const news = { href: '/noticias', icon: 'newspaper', label: 'Noticias' }
+
+  if (role === 'admin')    return [home, victims, map, news, requests]
+  if (role === 'rescuer')  return canRegister ? [home, victims, map, news] : [home, search, map, news]
+  if (role === 'medical')  return [home, victims, map, news]
+  if (role === 'family')   return [home, search, map, news]
+  if (role === 'engineer') return [home, structs, map, news]
+  return [home, search, map, news]
 }
 
 export default function Header({ profile }: HeaderProps) {
@@ -46,6 +48,7 @@ export default function Header({ profile }: HeaderProps) {
     { href: '/estructuras',     label: 'Estructuras',     roles: ['admin', 'engineer', 'rescuer', 'medical'] },
     { href: '/buscar',          label: 'Buscar',          roles: ['admin', 'rescuer', 'medical', 'family', 'engineer'] },
     { href: '/mapa-publico',    label: 'Mapa',            roles: ['admin', 'rescuer', 'medical', 'family', 'engineer'] },
+    { href: '/noticias',        label: 'Noticias',        roles: ['admin', 'rescuer', 'medical', 'family', 'engineer'] },
     { href: '/solicitudes',     label: 'Solicitudes',     roles: ['admin'] },
     { href: '/verificacion',    label: 'Verificar',       roles: ['admin'] },
     { href: '/mis-solicitudes', label: 'Mis solicitudes', roles: ['family'] },

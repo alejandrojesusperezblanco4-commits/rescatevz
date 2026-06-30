@@ -524,3 +524,39 @@ SELECT v.* FROM (VALUES
   ('Ambulatorio Urbano La Pastora',       'La Pastora, Caracas',                     10.5135::decimal, -66.9210::decimal, 'hospital',    'pending', NULL::text, 'Reportado en campo: requiere inspección de ingeniero.',             NULL::timestamptz)
 ) AS v(name, address, lat, lng, structure_type, habitability, assessment_notes, report_notes, assessed_at)
 WHERE NOT EXISTS (SELECT 1 FROM public.structures);
+
+
+-- ============================================================
+-- Tablón de noticias (admin-only write, público read)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.news_posts (
+  id           UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  title        TEXT NOT NULL,
+  content      TEXT NOT NULL,
+  category     TEXT NOT NULL DEFAULT 'general'
+               CHECK (category IN ('ayuda','corredor','recursos','alerta','general')),
+  source_url   TEXT,
+  author_id    UUID REFERENCES public.profiles(id),
+  is_published BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+ALTER TABLE public.news_posts ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "news: leer publicadas (público)" ON public.news_posts;
+CREATE POLICY "news: leer publicadas (público)"
+  ON public.news_posts FOR SELECT
+  USING (is_published = TRUE OR EXISTS (
+    SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin'
+  ));
+
+DROP POLICY IF EXISTS "news: escribir (admin)" ON public.news_posts;
+CREATE POLICY "news: escribir (admin)"
+  ON public.news_posts FOR ALL
+  USING (public.is_admin())
+  WITH CHECK (public.is_admin());
+
+CREATE OR REPLACE TRIGGER news_posts_updated_at
+  BEFORE UPDATE ON public.news_posts
+  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at();
