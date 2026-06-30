@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sin conexión — RescateVZ</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #1a2744;
+      color: #F0F4FF;
+      font-family: 'Inter', -apple-system, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      text-align: center;
+    }
+    .logo {
+      width: 56px; height: 56px;
+      border-radius: 50%;
+      background: #1e2d4a;
+      border: 2px solid #D4A017;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 900; font-size: 14px; color: #D4A017;
+      margin: 0 auto 20px;
+    }
+    h1 { font-size: 22px; font-weight: 800; margin-bottom: 8px; color: #F0F4FF; }
+    p { color: #94A3B8; font-size: 15px; line-height: 1.6; max-width: 320px; margin: 0 auto 32px; }
+    .guides {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      width: 100%;
+      max-width: 360px;
+      margin-bottom: 20px;
+    }
+    .guide-link {
+      background: #1e2d4a;
+      border: 1px solid rgba(36,51,86,0.7);
+      border-radius: 10px;
+      padding: 14px 10px;
+      text-decoration: none;
+      color: #d0d8f0;
+      font-size: 13px;
+      font-weight: 600;
+      transition: border-color .2s;
+    }
+    .guide-link:hover { border-color: #D4A017; }
+    .guide-link .icon { font-size: 22px; display: block; margin-bottom: 6px; }
+    .banner {
+      background: #DC2626;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .15em;
+      padding: 8px 16px;
+      border-radius: 6px;
+      margin-bottom: 32px;
+    }
+    .retry {
+      font-size: 13px;
+      color: #D4A017;
+      text-decoration: none;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <div class="banner">🚨 Emergencia activa · Terremotos Venezuela · 24 jun 2026</div>
+  <div class="logo">RV</div>
+  <h1>Sin conexión a internet</h1>
+  <p>Estás offline. Las guías de primeros auxilios están disponibles porque las guardaste previamente.</p>
+
+  <div class="guides">
+    <a href="/primeros-auxilios/rcp" class="guide-link">
+      <span class="icon">❤️</span>RCP
+    </a>
+    <a href="/primeros-auxilios/hemorragia" class="guide-link">
+      <span class="icon">🩸</span>Hemorragias
+    </a>
+    <a href="/primeros-auxilios/shock" class="guide-link">
+      <span class="icon">⚡</span>Shock
+    </a>
+    <a href="/primeros-auxilios/aplastamiento" class="guide-link">
+      <span class="icon">🏗️</span>Aplastamiento
+    </a>
+    <a href="/primeros-auxilios/fracturas" class="guide-link">
+      <span class="icon">🦴</span>Fracturas
+    </a>
+    <a href="/primeros-auxilios/quemaduras" class="guide-link">
+      <span class="icon">🔥</span>Quemaduras
+    </a>
+    <a href="/primeros-auxilios/inconsciencia" class="guide-link">
+      <span class="icon">😴</span>Inconsciencia
+    </a>
+    <a href="/primeros-auxilios/asfixia" class="guide-link">
+      <span class="icon">🫁</span>Asfixia
+    </a>
+  </div>
+
+  <a href="/" class="retry" onclick="window.location.reload()">
+    ↺ Reintentar conexión
+  </a>
+</body>
+</html>
