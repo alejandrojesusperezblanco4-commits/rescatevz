@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import PublicShell from '@/components/PublicShell'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -30,71 +31,63 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
-      <div className="bg-red-600 text-white text-center py-2 text-sm font-medium">
-        Emergencia activa — Terremotos Venezuela 24 de junio 2026
-      </div>
+    <PublicShell mainClassName="flex-1 flex items-center justify-center px-4 py-12">
+      <div className="w-full max-w-md">
+        <div className="text-center mb-8">
+          <h1 className="text-2xl font-bold text-white">Iniciar sesión</h1>
+          <p className="text-sm text-gray-400 mt-1">Accede a tu cuenta de RescateVZ</p>
+        </div>
 
-      <div className="flex-1 flex items-center justify-center px-4 py-12">
-        <div className="w-full max-w-md">
-          <div className="text-center mb-8">
-            <Link href="/" className="inline-flex items-center gap-2 mb-4">
-              <div className="w-10 h-10 bg-red-600 rounded-full flex items-center justify-center font-bold text-white">RV</div>
-              <span className="font-bold text-xl text-gray-900">RescateVZ</span>
+        <div className="rounded-xl border border-white/10 p-8" style={{ background: '#161B22' }}>
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">Correo electrónico</label>
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                className="w-full bg-white/5 border border-white/15 text-white placeholder-gray-500 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#CF142B] focus:border-transparent"
+                placeholder="tu@correo.com"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">Contraseña</label>
+              <input
+                type="password"
+                required
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                className="w-full bg-white/5 border border-white/15 text-white placeholder-gray-500 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#CF142B] focus:border-transparent"
+                placeholder="••••••••"
+              />
+            </div>
+
+            {error && (
+              <div className="bg-red-500/10 border border-red-500/30 text-red-300 text-sm px-3 py-2 rounded-lg">
+                {error}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full text-white font-medium py-2.5 rounded-lg transition-all hover:brightness-110 disabled:opacity-60"
+              style={{ background: '#CF142B' }}
+            >
+              {loading ? 'Ingresando…' : 'Iniciar sesión'}
+            </button>
+          </form>
+
+          <p className="text-center text-sm text-gray-400 mt-6">
+            ¿No tienes cuenta?{' '}
+            <Link href="/registro" className="text-red-400 hover:text-red-300 font-medium">
+              Regístrate aquí
             </Link>
-            <h1 className="text-2xl font-bold text-gray-900">Iniciar sesión</h1>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
-            <form onSubmit={handleLogin} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Correo electrónico</label>
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                  placeholder="tu@correo.com"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Contraseña</label>
-                <input
-                  type="password"
-                  required
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                  placeholder="••••••••"
-                />
-              </div>
-
-              {error && (
-                <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-3 py-2 rounded-lg">
-                  {error}
-                </div>
-              )}
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-red-600 hover:bg-red-700 disabled:opacity-60 text-white font-medium py-2.5 rounded-lg transition-colors"
-              >
-                {loading ? 'Ingresando…' : 'Iniciar sesión'}
-              </button>
-            </form>
-
-            <p className="text-center text-sm text-gray-500 mt-6">
-              ¿No tienes cuenta?{' '}
-              <Link href="/registro" className="text-red-600 hover:underline font-medium">
-                Regístrate aquí
-              </Link>
-            </p>
-          </div>
+          </p>
         </div>
       </div>
-    </div>
+    </PublicShell>
   )
 }

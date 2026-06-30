@@ -410,3 +410,102 @@ CREATE POLICY "minor_inquiries: insertar"
     AND id_document_url IS NOT NULL
     AND length(id_document_url) > 0
   );
+
+-- ============================================================
+-- MIGRACIÓN: rol ingeniero/arquitecto + habitabilidad de estructuras
+-- Tras un terremoto, ingenieros y arquitectos evalúan edificaciones con
+-- un semáforo (verde = habitable, amarillo = uso restringido, rojo = no
+-- habitable) y queda registro de las que aún están por analizar. Los
+-- rescatistas en campo pueden reportar una estructura ("poner una issue")
+-- que entra como 'pending' hasta que un ingeniero la evalúe. La lectura es
+-- pública (se muestra en el mapa); solo ingenieros/admin asignan el color.
+-- Seguro de re-ejecutar sobre una base ya creada.
+-- ============================================================
+
+-- Añadir 'engineer' al CHECK de roles (constraint con nombre autogenerado)
+ALTER TABLE public.profiles DROP CONSTRAINT IF EXISTS profiles_role_check;
+ALTER TABLE public.profiles
+  ADD CONSTRAINT profiles_role_check
+  CHECK (role IN ('admin', 'rescuer', 'medical', 'family', 'engineer'));
+
+CREATE TABLE IF NOT EXISTS public.structures (
+  id               UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  name             TEXT NOT NULL,
+  address          TEXT,
+  lat              DECIMAL(10, 7),
+  lng              DECIMAL(10, 7),
+  structure_type   TEXT CHECK (structure_type IN
+                     ('residential', 'school', 'hospital', 'commercial',
+                      'government', 'bridge', 'other')),
+  habitability     TEXT NOT NULL DEFAULT 'pending'
+                     CHECK (habitability IN ('pending', 'green', 'yellow', 'red')),
+  report_notes     TEXT,                          -- lo que reportó quien la dio de alta
+  assessment_notes TEXT,                          -- observaciones del ingeniero
+  reported_by      UUID REFERENCES public.profiles(id),
+  assessed_by      UUID REFERENCES public.profiles(id),
+  assessed_at      TIMESTAMPTZ,
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+ALTER TABLE public.structures ENABLE ROW LEVEL SECURITY;
+
+-- Lectura pública: el estado de habitabilidad es información de interés
+-- público (se muestra en el mapa). No contiene datos personales.
+DROP POLICY IF EXISTS "structures: leer (público)" ON public.structures;
+CREATE POLICY "structures: leer (público)"
+  ON public.structures FOR SELECT
+  USING (TRUE);
+
+-- Crear/reportar: admin e ingenieros verificados crean con cualquier
+-- estado; rescatistas verificados solo pueden añadir estructuras 'pending'
+-- (reportar para que un ingeniero las evalúe).
+DROP POLICY IF EXISTS "structures: crear/reportar" ON public.structures;
+CREATE POLICY "structures: crear/reportar"
+  ON public.structures FOR INSERT
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM public.profiles p
+      WHERE p.id = auth.uid()
+        AND (
+          p.role = 'admin'
+          OR (p.role = 'engineer' AND p.is_verified = TRUE)
+          OR (p.role = 'rescuer' AND p.is_verified = TRUE AND habitability = 'pending')
+        )
+    )
+  );
+
+-- Evaluar (asignar/cambiar el color del semáforo): solo ingenieros
+-- verificados y admin.
+DROP POLICY IF EXISTS "structures: evaluar (ingeniero/admin)" ON public.structures;
+CREATE POLICY "structures: evaluar (ingeniero/admin)"
+  ON public.structures FOR UPDATE
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.profiles p
+      WHERE p.id = auth.uid()
+        AND (p.role = 'admin' OR (p.role = 'engineer' AND p.is_verified = TRUE))
+    )
+  );
+
+DROP POLICY IF EXISTS "structures: borrar (admin)" ON public.structures;
+CREATE POLICY "structures: borrar (admin)"
+  ON public.structures FOR DELETE
+  USING (public.is_admin());
+
+CREATE OR REPLACE TRIGGER structures_updated_at
+  BEFORE UPDATE ON public.structures
+  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at();
+
+-- Datos de ejemplo (solo si la tabla está vacía): mezcla de evaluadas y
+-- pendientes para que el semáforo y el mapa no salgan vacíos.
+INSERT INTO public.structures
+  (name, address, lat, lng, structure_type, habitability, assessment_notes, report_notes, assessed_at)
+SELECT v.* FROM (VALUES
+  ('Edificio Residencial Parque Central', 'Av. Lecuna, Parque Central, Caracas',     10.4945::decimal, -66.9075::decimal, 'residential', 'red',     'Daño estructural severo en columnas del nivel 1. Evacuación total.', NULL::text, NOW()),
+  ('Escuela Básica Andrés Bello',         'Av. Sucre, Catia, Caracas',               10.5096::decimal, -66.9295::decimal, 'school',      'yellow',  'Grietas no estructurales. Acceso restringido a planta baja.',       NULL::text, NOW()),
+  ('Centro Comercial El Recreo',          'Av. Casanova, Sabana Grande, Caracas',    10.4915::decimal, -66.8765::decimal, 'commercial',  'green',   'Inspeccionado. Sin daños estructurales. Apto para uso.',            NULL::text, NOW()),
+  ('Edificio sin identificar — Av. Baralt','Av. Baralt, Caracas',                    10.5050::decimal, -66.9180::decimal, 'residential', 'pending', NULL::text, 'Reportado por rescatista: fachada con grietas visibles.',           NULL::timestamptz),
+  ('Ambulatorio Urbano La Pastora',       'La Pastora, Caracas',                     10.5135::decimal, -66.9210::decimal, 'hospital',    'pending', NULL::text, 'Reportado en campo: requiere inspección de ingeniero.',             NULL::timestamptz)
+) AS v(name, address, lat, lng, structure_type, habitability, assessment_notes, report_notes, assessed_at)
+WHERE NOT EXISTS (SELECT 1 FROM public.structures);

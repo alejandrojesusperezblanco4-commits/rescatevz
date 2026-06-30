@@ -2,13 +2,22 @@
 
 import { useEffect, useRef } from 'react'
 import type { Map as LeafletMap } from 'leaflet'
-import type { Location } from '@/lib/types'
+import type { Location, Structure } from '@/lib/types'
+import { HABITABILITY_HEX, HABITABILITY_LABELS, STRUCTURE_TYPE_LABELS } from '@/lib/types'
 
 interface MapaRescateProps {
   locations: Location[]
+  structures?: Structure[]
 }
 
-export default function MapaRescate({ locations }: MapaRescateProps) {
+// Escapa texto introducido por el usuario antes de inyectarlo en el HTML
+// del popup de Leaflet (los reportes de estructuras vienen de rescatistas).
+function esc(s: string): string {
+  return s.replace(/[&<>"']/g, c =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] as string))
+}
+
+export default function MapaRescate({ locations, structures = [] }: MapaRescateProps) {
   const mapRef = useRef<HTMLDivElement>(null)
   const mapInstanceRef = useRef<LeafletMap | null>(null)
 
@@ -84,6 +93,49 @@ export default function MapaRescate({ locations }: MapaRescateProps) {
           .addTo(map)
           .bindPopup(popupContent, { maxWidth: 250 })
       })
+
+      // Estructuras evaluadas: marcador cuadrado con el color del semáforo.
+      structures.forEach(st => {
+        if (st.lat == null || st.lng == null) return
+        const color = HABITABILITY_HEX[st.habitability]
+        const icon = L.divIcon({
+          className: '',
+          html: `<div style="
+            background: ${color};
+            color: white;
+            border-radius: 6px;
+            width: 28px; height: 28px;
+            display: flex; align-items: center; justify-content: center;
+            border: 2px solid white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+          ">
+            <span style="font-size: 13px;">🏢</span>
+          </div>`,
+          iconSize: [28, 28],
+          iconAnchor: [14, 28],
+          popupAnchor: [0, -28],
+        })
+
+        const typeLabel = st.structure_type ? STRUCTURE_TYPE_LABELS[st.structure_type] : 'Estructura'
+        const notes = st.assessment_notes || st.report_notes
+
+        const popupContent = `
+          <div style="min-width: 180px; font-family: system-ui, sans-serif;">
+            <div style="font-weight: 600; color: #111827; font-size: 14px;">${esc(st.name)}</div>
+            <div style="font-size: 11px; color: #6B7280; margin-top: 2px; text-transform: uppercase; letter-spacing: 0.05em;">${typeLabel}</div>
+            <div style="display: flex; align-items: center; gap: 6px; margin-top: 6px;">
+              <span style="width: 10px; height: 10px; border-radius: 9999px; background: ${color}; display: inline-block;"></span>
+              <span style="font-size: 12px; font-weight: 600; color: ${color};">${HABITABILITY_LABELS[st.habitability]}</span>
+            </div>
+            ${st.address ? `<div style="font-size: 12px; color: #374151; margin-top: 6px;">${esc(st.address)}</div>` : ''}
+            ${notes ? `<div style="font-size: 12px; color: #6B7280; margin-top: 4px;">${esc(notes)}</div>` : ''}
+          </div>
+        `
+
+        L.marker([st.lat, st.lng], { icon })
+          .addTo(map)
+          .bindPopup(popupContent, { maxWidth: 260 })
+      })
     })
 
     return () => {
@@ -92,7 +144,7 @@ export default function MapaRescate({ locations }: MapaRescateProps) {
         mapInstanceRef.current = null
       }
     }
-  }, [locations])
+  }, [locations, structures])
 
   return (
     <div

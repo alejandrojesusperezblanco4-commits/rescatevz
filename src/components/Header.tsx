@@ -22,12 +22,13 @@ export default function Header({ profile }: HeaderProps) {
   }
 
   const nav = [
-    { href: '/dashboard', label: 'Inicio', roles: ['admin', 'rescuer', 'medical', 'family'] },
+    { href: '/dashboard', label: 'Inicio', roles: ['admin', 'rescuer', 'medical', 'family', 'engineer'] },
     { href: '/victimas', label: 'Víctimas', roles: ['admin', 'rescuer', 'medical'] },
     { href: '/victimas/nueva', label: 'Registrar víctima', roles: ['admin', 'rescuer', 'medical'] },
-    { href: '/buscar', label: 'Buscar familiar', roles: ['admin', 'rescuer', 'medical', 'family'] },
-    { href: '/mapa-publico', label: 'Mapa', roles: ['admin', 'rescuer', 'medical', 'family'] },
-    { href: '/primeros-auxilios', label: 'Primeros auxilios', roles: ['admin', 'rescuer', 'medical', 'family'] },
+    { href: '/estructuras', label: 'Estructuras', roles: ['admin', 'engineer', 'rescuer', 'medical'] },
+    { href: '/buscar', label: 'Buscar familiar', roles: ['admin', 'rescuer', 'medical', 'family', 'engineer'] },
+    { href: '/mapa-publico', label: 'Mapa', roles: ['admin', 'rescuer', 'medical', 'family', 'engineer'] },
+    { href: '/primeros-auxilios', label: 'Primeros auxilios', roles: ['admin', 'rescuer', 'medical', 'family', 'engineer'] },
     { href: '/mis-solicitudes', label: 'Mis solicitudes', roles: ['family'] },
     { href: '/verificacion', label: 'Verificar staff', roles: ['admin'] },
     { href: '/ubicaciones', label: 'Ubicaciones', roles: ['admin'] },

@@ -1,12 +1,23 @@
+import Link from 'next/link'
 import BusquedaFamiliar from '@/components/BusquedaFamiliar'
+import PublicShell from '@/components/PublicShell'
 
 export default function BuscarPage() {
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
-      <div className="bg-red-600 text-white text-center py-2 text-sm font-medium">
-        Emergencia activa — Terremotos Venezuela 24 de junio 2026
-      </div>
+    <PublicShell
+      title="Buscar familiar"
+      headerRight={
+        <>
+          <Link href="/login" className="text-sm text-gray-300 hover:text-white transition-colors px-3 py-1.5">
+            Entrar
+          </Link>
+          <Link href="/" className="text-sm text-gray-400 hover:text-white transition-colors px-3 py-1.5">
+            ← Inicio
+          </Link>
+        </>
+      }
+    >
       <BusquedaFamiliar />
-    </div>
+    </PublicShell>
   )
 }

@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import Header from '@/components/Header'
 import type { Profile } from '@/lib/types'
-import { STATUS_LABELS, STATUS_COLORS } from '@/lib/types'
+import { STATUS_LABELS, STATUS_COLORS, ROLE_LABELS } from '@/lib/types'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -22,6 +22,7 @@ export default async function DashboardPage() {
     { count: minors },
     { count: pendingSolicitudes },
     { count: pendingStaff },
+    { count: pendingStructures },
     { data: recentVictims },
     { data: locations },
   ] = await Promise.all([
@@ -34,7 +35,10 @@ export default async function DashboardPage() {
       ? supabase.from('access_requests').select('*', { count: 'exact', head: true }).eq('status', 'pending')
       : Promise.resolve({ count: 0 }),
     profile.role === 'admin'
-      ? supabase.from('profiles').select('*', { count: 'exact', head: true }).in('role', ['rescuer', 'medical']).eq('is_verified', false)
+      ? supabase.from('profiles').select('*', { count: 'exact', head: true }).in('role', ['rescuer', 'medical', 'engineer']).eq('is_verified', false)
+      : Promise.resolve({ count: 0 }),
+    (profile.role === 'admin' || profile.role === 'engineer')
+      ? supabase.from('structures').select('*', { count: 'exact', head: true }).eq('habitability', 'pending')
       : Promise.resolve({ count: 0 }),
     supabase.from('victims').select('id, name, status, is_minor, created_at').order('created_at', { ascending: false }).limit(6),
     supabase.from('locations').select('id, name, type, current_occupancy, capacity').eq('is_active', true).order('type').limit(6),
@@ -54,7 +58,7 @@ export default async function DashboardPage() {
             <div>
               <p className="font-medium text-amber-800">Cuenta pendiente de verificación</p>
               <p className="text-sm text-amber-700 mt-0.5">
-                Un administrador revisará tu solicitud como {profile.role === 'rescuer' ? 'rescatista' : 'personal médico'} pronto.
+                Un administrador revisará tu solicitud como {ROLE_LABELS[(profile as Profile).role].toLowerCase()} pronto.
               </p>
             </div>
           </div>
@@ -93,12 +97,25 @@ export default async function DashboardPage() {
             {(pendingStaff || 0) > 0 && (
               <AlertCard
                 icon="👤"
-                text={`${pendingStaff} rescatista${pendingStaff! > 1 ? 's' : ''} pendiente${pendingStaff! > 1 ? 's' : ''} de verificación`}
+                text={`${pendingStaff} cuenta${pendingStaff! > 1 ? 's' : ''} de staff pendiente${pendingStaff! > 1 ? 's' : ''} de verificación`}
                 href="/verificacion"
                 label="Verificar"
                 color="amber"
               />
             )}
+          </div>
+        )}
+
+        {/* Alerta de estructuras por analizar (ingenieros y admin) */}
+        {(profile.role === 'admin' || profile.role === 'engineer') && (pendingStructures || 0) > 0 && (
+          <div className="flex flex-col sm:flex-row gap-3 mb-6">
+            <AlertCard
+              icon="🏚️"
+              text={`${pendingStructures} estructura${pendingStructures! > 1 ? 's' : ''} por analizar`}
+              href="/estructuras"
+              label="Evaluar"
+              color="amber"
+            />
           </div>
         )}
 

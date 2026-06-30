@@ -9,10 +9,16 @@ interface StaffProfile {
   id: string
   email: string
   full_name: string
-  role: 'rescuer' | 'medical'
+  role: 'rescuer' | 'medical' | 'engineer'
   cedula: string | null
   created_at: string
   is_verified: boolean
+}
+
+const ROLE_BADGE: Record<StaffProfile['role'], string> = {
+  medical: 'bg-blue-100 text-blue-700',
+  rescuer: 'bg-orange-100 text-orange-700',
+  engineer: 'bg-teal-100 text-teal-700',
 }
 
 interface VerificacionPanelProps {
@@ -113,11 +119,7 @@ export default function VerificacionPanel({ pendientes, verificados, adminId }: 
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap mb-1">
                   <span className="font-semibold text-gray-900">{p.full_name || '(sin nombre)'}</span>
-                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                    p.role === 'medical'
-                      ? 'bg-blue-100 text-blue-700'
-                      : 'bg-orange-100 text-orange-700'
-                  }`}>
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${ROLE_BADGE[p.role]}`}>
                     {ROLE_LABELS[p.role]}
                   </span>
                   {p.is_verified && (
