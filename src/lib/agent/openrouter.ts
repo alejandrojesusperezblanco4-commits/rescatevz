@@ -1,9 +1,21 @@
 const BASE_URL = 'https://openrouter.ai/api/v1'
 const MODEL = 'anthropic/claude-haiku-4.5'
 
+type TextPart = { type: 'text'; text: string }
+type ImagePart = { type: 'image_url'; image_url: { url: string } }
+type ContentPart = TextPart | ImagePart
+
 export interface Message {
   role: 'system' | 'user' | 'assistant'
-  content: string
+  content: string | ContentPart[]
+}
+
+export function imagePart(url: string): ImagePart {
+  return { type: 'image_url', image_url: { url } }
+}
+
+export function textPart(text: string): TextPart {
+  return { type: 'text', text }
 }
 
 export async function chat(messages: Message[], opts?: { json?: boolean }): Promise<string> {

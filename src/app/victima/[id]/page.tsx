@@ -1,11 +1,14 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
+import QRCode from 'qrcode'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import Header from '@/components/Header'
 import type { Profile } from '@/lib/types'
 import { STATUS_LABELS, STATUS_COLORS, type VictimStatus } from '@/lib/types'
 import ActualizarVictimaForm from '@/components/ActualizarVictimaForm'
+import VictimaCompartir from '@/components/VictimaCompartir'
+import BiometricoPanel from '@/components/BiometricoPanel'
 
 export default async function VictimaPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -54,6 +57,11 @@ export default async function VictimaPage({ params }: { params: Promise<{ id: st
     const { data } = await supabase.from('locations').select('id, name, type').eq('is_active', true).order('type')
     locations = data || []
   }
+
+  const victimUrl = `${process.env.NEXT_PUBLIC_APP_URL}/victima/${id}`
+  const qrDataUrl = await QRCode.toDataURL(victimUrl, { width: 200, margin: 2, color: { dark: '#1a2744', light: '#ffffff' } })
+
+  const isStaff = ['admin', 'rescuer', 'medical'].includes(profile.role)
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -138,6 +146,22 @@ export default async function VictimaPage({ params }: { params: Promise<{ id: st
               currentNotes={victim.notes}
               locations={locations}
               userId={user.id}
+            />
+          )}
+
+          <VictimaCompartir
+            victimId={victim.id}
+            victimName={victim.name}
+            status={victim.status}
+            foundLocation={victim.found_location}
+            qrDataUrl={qrDataUrl}
+            victimUrl={victimUrl}
+          />
+
+          {isStaff && profile.is_verified && (
+            <BiometricoPanel
+              victimId={victim.id}
+              hasPhotos={photoUrls.length > 0}
             />
           )}
         </div>
