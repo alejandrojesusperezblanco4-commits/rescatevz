@@ -90,3 +90,12 @@
 ✓ Compiled in 692ms
 ✓ Compiled in 3.2s
 ✓ Compiled in 1487ms
+⚠ Found a change in next.config.ts. Restarting the server to apply the changes...
+▲ Next.js 16.2.9 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.1.15:3000
+- Environments: .env.local
+✓ Ready in 2.5s
+⚠ Slow filesystem detected. The benchmark took 256ms. If C:\Users\elipa\rescatevz\.next/dev is a network drive, consider moving it to a local folder.
+See more: https://nextjs.org/docs/app/guides/local-development
+
