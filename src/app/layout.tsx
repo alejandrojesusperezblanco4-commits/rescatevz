@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import ChatWidget from '@/components/ChatWidget'
 import PWARegistrar from '@/components/PWARegistrar'
+import { ToastProvider } from '@/components/ToastProvider'
 
 export const metadata: Metadata = {
   title: 'RescateVZ — Registro de víctimas',
@@ -45,8 +46,10 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-title" content="RescateVZ" />
       </head>
       <body className="min-h-full flex flex-col" style={{ fontFamily: "'Inter', sans-serif" }}>
-        {children}
-        <ChatWidget />
+        <ToastProvider>
+          {children}
+          <ChatWidget />
+        </ToastProvider>
         <PWARegistrar />
       </body>
     </html>

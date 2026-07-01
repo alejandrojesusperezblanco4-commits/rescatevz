@@ -8,6 +8,7 @@ import { ROLE_LABELS } from '@/lib/types'
 
 interface HeaderProps {
   profile: Profile
+  pendingCount?: number
 }
 
 // Tabs del bottom nav por rol
@@ -31,7 +32,7 @@ function getBottomTabs(role: string, canRegister: boolean) {
   return [home, search, map, news]
 }
 
-export default function Header({ profile }: HeaderProps) {
+export default function Header({ profile, pendingCount = 0 }: HeaderProps) {
   const router = useRouter()
   const pathname = usePathname()
 
@@ -141,14 +142,23 @@ export default function Header({ profile }: HeaderProps) {
         }}>
         {bottomTabs.map(tab => {
           const active = pathname === tab.href || pathname.startsWith(tab.href + '/')
+          const showBadge = tab.href === '/solicitudes' && pendingCount > 0
           return (
             <Link key={tab.href} href={tab.href}
-              className="flex-1 flex flex-col items-center justify-center gap-0.5 transition-colors active:opacity-70"
+              className="flex-1 flex flex-col items-center justify-center gap-0.5 transition-colors active:opacity-70 relative"
               style={{ color: active ? '#D4A017' : '#475569', minWidth: 0 }}>
-              <span className="material-symbols-outlined"
-                style={{ fontSize: '22px', fontVariationSettings: active ? "'FILL' 1" : "'FILL' 0" }}>
-                {tab.icon}
-              </span>
+              <div className="relative">
+                <span className="material-symbols-outlined"
+                  style={{ fontSize: '22px', fontVariationSettings: active ? "'FILL' 1" : "'FILL' 0" }}>
+                  {tab.icon}
+                </span>
+                {showBadge && (
+                  <span className="absolute -top-1 -right-1 flex items-center justify-center rounded-full text-white font-bold"
+                    style={{ minWidth: '16px', height: '16px', fontSize: '9px', background: '#DC2626', padding: '0 3px' }}>
+                    {pendingCount > 9 ? '9+' : pendingCount}
+                  </span>
+                )}
+              </div>
               <span className="text-[10px] font-medium truncate w-full text-center px-1">{tab.label}</span>
               {active && (
                 <span className="absolute top-0 w-8 h-0.5 rounded-full" style={{ background: '#D4A017' }} />

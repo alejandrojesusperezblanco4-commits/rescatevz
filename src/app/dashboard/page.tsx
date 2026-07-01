@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import Header from '@/components/Header'
+import DashboardStats from '@/components/DashboardStats'
 import type { Profile } from '@/lib/types'
 
 export default async function DashboardPage() {
@@ -44,14 +45,6 @@ export default async function DashboardPage() {
 
   const canRegister = profile.role === 'admin' || (profile.is_verified && ['rescuer', 'medical'].includes(profile.role))
 
-  const statCards = [
-    { label: 'TOTAL', value: total || 0, color: '#F0F4FF', borderClass: 'border-l-white' },
-    { label: 'CON VIDA', value: alive || 0, color: '#22C55E', borderClass: 'border-l-green-500' },
-    { label: 'CRÍTICO', value: critical || 0, color: '#DC2626', borderClass: 'border-l-red-600' },
-    { label: 'FALLECIDOS', value: deceased || 0, color: '#94A3B8', borderClass: 'border-l-slate-400' },
-    { label: 'MENORES', value: minors || 0, color: '#A855F7', borderClass: 'border-l-purple-500' },
-  ]
-
   return (
     <div className="min-h-screen flex flex-col antialiased"
       style={{ background: '#1a2744', color: '#F0F4FF', fontFamily: "'Manrope', sans-serif" }}>
@@ -61,7 +54,7 @@ export default async function DashboardPage() {
         🚨 EMERGENCIA ACTIVA — Terremotos Venezuela · 24 jun 2026
       </div>
 
-      <Header profile={profile as Profile} />
+      <Header profile={profile as Profile} pendingCount={(pendingSolicitudes || 0) + (pendingStaff || 0)} />
 
       <main className="flex-grow px-4 md:px-8 pb-12 pt-6 flex flex-col gap-6 w-full max-w-7xl mx-auto">
 
@@ -79,27 +72,8 @@ export default async function DashboardPage() {
           </div>
         )}
 
-        {/* 3. Stat Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-          {statCards.map(s => (
-            <div key={s.label}
-              className={`rounded-lg p-4 flex flex-col justify-between border-l-4 ${s.borderClass}`}
-              style={{
-                background: '#1e2d4a',
-                border: '1px solid rgba(36,51,86,0.5)',
-                borderLeftWidth: '4px',
-                borderLeftColor: s.color,
-                height: '120px',
-              }}>
-              <div className="text-[12px] font-bold uppercase tracking-widest" style={{ color: '#94A3B8' }}>
-                {s.label}
-              </div>
-              <div className="tabular-nums font-black" style={{ fontSize: '42px', lineHeight: 1.2, color: s.color }}>
-                {s.value.toLocaleString('es-VE')}
-              </div>
-            </div>
-          ))}
-        </div>
+        {/* 3. Stats en tiempo real */}
+        <DashboardStats initial={{ total: total || 0, alive: alive || 0, critical: critical || 0, deceased: deceased || 0, minors: minors || 0 }} />
 
         {/* 4. Alertas admin */}
         {profile.role === 'admin' && ((pendingSolicitudes || 0) > 0 || (pendingStaff || 0) > 0) && (

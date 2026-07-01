@@ -9,6 +9,7 @@ import { STATUS_LABELS, STATUS_COLORS, type VictimStatus } from '@/lib/types'
 import ActualizarVictimaForm from '@/components/ActualizarVictimaForm'
 import VictimaCompartir from '@/components/VictimaCompartir'
 import BiometricoPanel from '@/components/BiometricoPanel'
+import VictimaFotos from '@/components/VictimaFotos'
 
 export default async function VictimaPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -92,14 +93,7 @@ export default async function VictimaPage({ params }: { params: Promise<{ id: st
             </span>
           </div>
 
-          {photoUrls.length > 0 && (
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-5">
-              {photoUrls.map((url, i) => (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img key={i} src={url} alt="Foto de la víctima" className="rounded-lg object-cover w-full h-32" />
-              ))}
-            </div>
-          )}
+          <VictimaFotos photoUrls={photoUrls} />
 
           <dl className="space-y-4 text-sm" style={{ borderTop: '1px solid rgba(36,51,86,0.5)', paddingTop: '1.25rem' }}>
             <div>

@@ -36,8 +36,8 @@ export default async function EstructurasPage() {
       </div>
       <Header profile={profile as Profile} />
       <main className="flex-1 max-w-4xl mx-auto w-full px-4 py-8">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Habitabilidad de estructuras</h1>
-        <p className="text-sm text-gray-500 mb-8">
+        <h1 className="text-2xl font-bold mb-2" style={{ color: '#F0F4FF' }}>Habitabilidad de estructuras</h1>
+        <p className="text-sm mb-8" style={{ color: '#94A3B8' }}>
           {canAssess
             ? 'Evalúa edificaciones con el semáforo de habitabilidad y revisa las que faltan por analizar. El estado se publica en el mapa.'
             : 'Reporta edificaciones que necesiten inspección. Un ingeniero o arquitecto les asignará el estado del semáforo.'}
@@ -50,15 +50,16 @@ export default async function EstructurasPage() {
           href="https://gis.earthdata.nasa.gov/portal/apps/mapviewer/index.html?webmap=0c3d77dd5aae46e4829d9a282477615c"
           target="_blank"
           rel="noopener noreferrer"
-          className="block bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6 hover:border-blue-300 transition-colors"
+          className="block rounded-xl p-4 mb-6 transition-all hover:brightness-110"
+          style={{ background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.25)' }}
         >
           <div className="flex items-start gap-3">
-            <span className="text-2xl shrink-0">🛰️</span>
+            <span className="material-symbols-outlined shrink-0" style={{ color: '#60A5FA', fontSize: '24px' }}>satellite_alt</span>
             <div>
-              <p className="font-medium text-blue-900">
+              <p className="font-medium" style={{ color: '#93C5FD' }}>
                 Mapa de daños satelital — NASA <span className="text-xs align-top">↗</span>
               </p>
-              <p className="text-sm text-blue-800 mt-0.5">
+              <p className="text-sm mt-0.5" style={{ color: '#7DD3FC' }}>
                 Probabilidad de estructuras dañadas (Sentinel-1, ARIA/JPL) del terremoto. Úsalo como referencia
                 para decidir qué zonas inspeccionar primero. Es una estimación preliminar por área, no un listado
                 verificado edificio por edificio.
@@ -68,9 +69,10 @@ export default async function EstructurasPage() {
         </a>
 
         {!profile.is_verified && (profile.role === 'engineer' || profile.role === 'rescuer') && (
-          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 flex gap-3">
-            <span className="text-xl shrink-0">⏳</span>
-            <p className="text-sm text-amber-800">
+          <div className="rounded-xl p-4 mb-6 flex gap-3"
+            style={{ background: 'rgba(212,160,23,0.08)', border: '1px solid rgba(212,160,23,0.25)' }}>
+            <span className="material-symbols-outlined shrink-0" style={{ color: '#D4A017', fontSize: '20px' }}>schedule</span>
+            <p className="text-sm" style={{ color: '#FCD34D' }}>
               Tu cuenta está pendiente de verificación. Puedes consultar el listado, pero{' '}
               {profile.role === 'engineer' ? 'aún no puedes evaluar ni añadir estructuras' : 'aún no puedes reportar estructuras'} hasta
               que un administrador te apruebe.
