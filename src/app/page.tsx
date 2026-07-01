@@ -104,12 +104,24 @@ export default async function LandingPage() {
 
         {/* ── Hero ── */}
         <section className="py-20 md:py-28 text-center relative overflow-hidden">
+          {/* Foto de fondo — Caracas aérea con montañas (Unsplash, free to use) */}
+          <div className="absolute inset-0 pointer-events-none" style={{
+            backgroundImage: 'url(https://images.unsplash.com/photo-1724711603891-ca4557b9f40f?fm=jpg&q=80&w=1920&auto=format&fit=crop)',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center 40%',
+            opacity: 0.18,
+          }} />
+          {/* Gradiente sobre la foto para mantener legibilidad */}
+          <div className="absolute inset-0 pointer-events-none" style={{
+            background: 'linear-gradient(to bottom, #1a2744 0%, rgba(26,39,68,0.6) 40%, rgba(26,39,68,0.85) 80%, #1a2744 100%)',
+          }} />
+
           {/* Partículas flotantes */}
           <HeroParticles />
 
           {/* Dot grid background */}
           <div className="absolute inset-0 pointer-events-none" style={{
-            backgroundImage: 'radial-gradient(circle, rgba(212,160,23,0.12) 1px, transparent 1px)',
+            backgroundImage: 'radial-gradient(circle, rgba(212,160,23,0.10) 1px, transparent 1px)',
             backgroundSize: '32px 32px',
             maskImage: 'radial-gradient(ellipse 80% 60% at 50% 50%, black 40%, transparent 100%)',
           }} />
@@ -600,6 +612,138 @@ export default async function LandingPage() {
           </div>
         </section>
       </main>
+
+      {/* ── Colaboradores ── */}
+      <div className="w-full max-w-[1280px] mx-auto px-6 mb-20">
+        <ScrollReveal>
+          <div className="text-center mb-10">
+            <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: '#D4A017' }}>
+              Ecosistema humanitario
+            </p>
+            <h2 style={{ fontFamily: "'Manrope', sans-serif", fontSize: 'clamp(24px, 3.5vw, 36px)', fontWeight: 800, color: '#F0F4FF', lineHeight: 1.15 }}>
+              Red de plataformas colaboradoras
+            </h2>
+            <p className="mt-3 max-w-lg mx-auto text-sm leading-relaxed" style={{ color: '#94A3B8' }}>
+              Si no encuentras a tu familiar aquí, prueba también en estas plataformas.
+              Cada una cubre bases de datos distintas — juntas llegamos a más personas.
+            </p>
+          </div>
+        </ScrollReveal>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[
+            {
+              name: 'Venezuela Reporta',
+              url: 'https://venezuelareporta.org',
+              icon: 'monitoring',
+              desc: 'Base de datos ciudadana con más de 40.000 personas reportadas. API abierta integrada directamente en RescateVZ.',
+              badge: 'Integrada en RescateVZ',
+              badgeColor: '#22C55E',
+              accent: '#22C55E',
+              stats: '40k+ registros',
+            },
+            {
+              name: 'Venezuela Te Busca',
+              url: 'https://venezuelatebusca.com',
+              icon: 'manage_search',
+              desc: 'Registro deduplicado con tecnología Tilores — detecta si la misma persona aparece con nombre o cédula escrita diferente.',
+              badge: 'Deduplicación IA',
+              badgeColor: '#3B82F6',
+              accent: '#3B82F6',
+              stats: '28k+ registros',
+            },
+            {
+              name: 'Desaparecidos Terremoto VZ',
+              url: 'https://desaparecidosterremotovenezuela.com',
+              icon: 'group_search',
+              desc: 'La base de datos más grande del terremoto. Creada por ciudadanos venezolanos, con más de 67.000 personas registradas.',
+              badge: 'Mayor base de datos',
+              badgeColor: '#D4A017',
+              accent: '#D4A017',
+              stats: '67k+ registros',
+            },
+            {
+              name: 'SOS Venezuela 2026',
+              url: 'https://sosvenezuela2026.com',
+              icon: 'sos',
+              desc: 'Mapa comunitario de daños por parroquia. Puedes subir fotos de estructuras y reportar necesidades por zona.',
+              badge: 'Mapa de daños',
+              badgeColor: '#EF4444',
+              accent: '#EF4444',
+              stats: 'Cobertura por parroquia',
+            },
+            {
+              name: 'Terremoto Venezuela',
+              url: 'https://terremotovenezuela.com',
+              icon: 'crisis_alert',
+              desc: 'Búsqueda rápida y mapa de daños estructurales. Útil para localizar zonas afectadas y puntos de rescate activos.',
+              badge: 'Mapa estructural',
+              badgeColor: '#F97316',
+              accent: '#F97316',
+              stats: 'Actualizado en tiempo real',
+            },
+            {
+              name: 'RedQuipu',
+              url: 'https://redquipu.com',
+              icon: 'hub',
+              desc: 'Portal que agrega todas las plataformas anteriores en un solo lugar. Ideal si quieres buscar en múltiples bases de datos a la vez.',
+              badge: 'Agrega todo',
+              badgeColor: '#A855F7',
+              accent: '#A855F7',
+              stats: 'Multi-plataforma',
+            },
+          ].map((p, i) => (
+            <ScrollReveal key={p.name} delay={i * 70}>
+              <a
+                href={p.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group flex flex-col gap-3 rounded-2xl p-5 h-full transition-all duration-200 hover:scale-[1.02] hover:brightness-110"
+                style={{ background: '#1e2d4a', border: `1px solid rgba(36,51,86,0.6)` }}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                      style={{ background: `${p.accent}18`, border: `1px solid ${p.accent}35` }}>
+                      <span className="material-symbols-outlined" style={{ fontSize: '18px', color: p.accent, fontVariationSettings: "'FILL' 1" }}>
+                        {p.icon}
+                      </span>
+                    </div>
+                    <h3 className="font-bold text-sm leading-tight" style={{ fontFamily: "'Manrope', sans-serif", color: '#F0F4FF' }}>
+                      {p.name}
+                    </h3>
+                  </div>
+                  <span className="material-symbols-outlined shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                    style={{ fontSize: '16px', color: p.accent }}>
+                    open_in_new
+                  </span>
+                </div>
+
+                <p className="text-xs leading-relaxed flex-1" style={{ color: '#94A3B8' }}>{p.desc}</p>
+
+                <div className="flex items-center justify-between pt-2"
+                  style={{ borderTop: `1px solid rgba(36,51,86,0.5)` }}>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide"
+                    style={{ background: `${p.badgeColor}15`, color: p.badgeColor, border: `1px solid ${p.badgeColor}30` }}>
+                    {p.badge}
+                  </span>
+                  <span className="text-[10px]" style={{ color: '#475569' }}>{p.stats}</span>
+                </div>
+              </a>
+            </ScrollReveal>
+          ))}
+        </div>
+
+        {/* Nota de filosofía */}
+        <ScrollReveal delay={200}>
+          <div className="mt-8 text-center">
+            <p className="text-sm" style={{ color: '#475569' }}>
+              <span className="material-symbols-outlined" style={{ fontSize: '14px', verticalAlign: 'middle', marginRight: '4px', color: '#D4A017', fontVariationSettings: "'FILL' 1" }}>handshake</span>
+              RescateVZ no compite con estas plataformas — colaboramos con todas. La misión es encontrar a cada persona.
+            </p>
+          </div>
+        </ScrollReveal>
+      </div>
 
       {/* ── Footer ── */}
       <footer className="w-full mt-16 pt-12 pb-0 overflow-hidden"
