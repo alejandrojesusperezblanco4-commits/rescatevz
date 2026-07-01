@@ -22,6 +22,16 @@ async function getAuthUser() {
   return user
 }
 
+function extractJson(raw: string): string {
+  // 1. Quita fences de markdown: ```json ... ``` o ``` ... ```
+  const fenceMatch = raw.match(/```(?:json)?\s*([\s\S]*?)\s*```/)
+  if (fenceMatch) return fenceMatch[1].trim()
+  // 2. Busca el primer objeto JSON completo en la respuesta
+  const objMatch = raw.match(/\{[\s\S]*\}/)
+  if (objMatch) return objMatch[0]
+  return raw.trim()
+}
+
 const PROMPT = `Eres un asistente de rescate humanitario en Venezuela. Analiza este documento de campo y extrae todos los registros de personas.
 
 Para cada persona extrae:
@@ -79,16 +89,25 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Se requiere imageData como data URL' }, { status: 400 })
   }
 
-  const rawJson = await chat(
-    [{ role: 'user', content: [imagePart(imageData), textPart(PROMPT)] }],
-    { json: true }
+  // No usamos json:true con visión — algunos modelos no soportan la combinación
+  const raw = await chat(
+    [{ role: 'user', content: [imagePart(imageData), textPart(PROMPT)] }]
   )
+
+  // Extrae JSON aunque el modelo lo envuelva en ```json ... ```
+  const jsonStr = extractJson(raw)
 
   let result: unknown
   try {
-    result = JSON.parse(rawJson)
+    result = JSON.parse(jsonStr)
   } catch {
-    return NextResponse.json({ error: 'Error procesando respuesta del modelo' }, { status: 500 })
+    // Si sigue fallando, devuelve resultado vacío en lugar de error duro
+    result = {
+      personas: [],
+      tipo_documento: 'otro',
+      confianza: 'baja',
+      advertencias: ['No se pudo interpretar la respuesta del modelo. Intenta con otra foto más nítida.'],
+    }
   }
 
   return NextResponse.json(result)
