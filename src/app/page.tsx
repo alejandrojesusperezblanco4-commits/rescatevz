@@ -1,7 +1,10 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import StatsCounter from '@/components/StatsCounter'
 import ActivityFeed from '@/components/ActivityFeed'
+
+export const dynamic = 'force-dynamic'
 
 const CATEGORY_COLORS: Record<string, { bg: string; text: string; label: string }> = {
   ayuda:     { bg: 'rgba(34,197,94,0.12)',  text: '#86EFAC', label: 'Ayuda' },
@@ -21,6 +24,9 @@ function timeAgo(date: string): string {
 }
 
 export default async function LandingPage() {
+  // admin client para conteos — RLS bloquea victims/access_requests para usuarios anónimos
+  const admin = createAdminClient()
+  // client normal para news_posts (política pública) y locations
   const supabase = await createClient()
 
   const [
@@ -31,11 +37,11 @@ export default async function LandingPage() {
     { count: familiasReunidas },
     { data: latestNews },
   ] = await Promise.all([
-    supabase.from('victims').select('*', { count: 'exact', head: true }),
-    supabase.from('victims').select('*', { count: 'exact', head: true }).eq('status', 'alive'),
+    admin.from('victims').select('*', { count: 'exact', head: true }),
+    admin.from('victims').select('*', { count: 'exact', head: true }).eq('status', 'alive'),
     supabase.from('locations').select('*', { count: 'exact', head: true }).eq('is_active', true),
-    supabase.from('victims').select('*', { count: 'exact', head: true }).eq('is_minor', true),
-    supabase.from('access_requests').select('*', { count: 'exact', head: true }).eq('status', 'approved'),
+    admin.from('victims').select('*', { count: 'exact', head: true }).eq('is_minor', true),
+    admin.from('access_requests').select('*', { count: 'exact', head: true }).eq('status', 'approved'),
     supabase.from('news_posts').select('id, title, category, published_at').eq('is_published', true).order('published_at', { ascending: false }).limit(3),
   ])
 
