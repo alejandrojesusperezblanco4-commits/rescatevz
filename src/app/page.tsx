@@ -80,7 +80,7 @@ export default async function LandingPage() {
               </span>
             </div>
             <div className="hidden md:flex gap-6">
-              {[['Noticias', '/noticias'], ['Guía', '/guia'], ['Primeros auxilios', '/primeros-auxilios']].map(([label, href]) => (
+              {[['Noticias', '/noticias'], ['Donaciones', '/donaciones'], ['Guía', '/guia'], ['Primeros auxilios', '/primeros-auxilios']].map(([label, href]) => (
                 <Link key={label} href={href} className="font-medium transition-colors hover:text-yellow-400" style={{ color: '#c5c6ce' }}>
                   {label}
                 </Link>
@@ -760,7 +760,7 @@ export default async function LandingPage() {
             </p>
           </div>
           <div className="grid grid-cols-2 gap-x-12 gap-y-3">
-            {[['Primeros auxilios', '/primeros-auxilios'], ['Guía de uso', '/guia'], ['Mapa de emergencia', '/mapa-publico'], ['Noticias', '/noticias']].map(([label, href]) => (
+            {[['Primeros auxilios', '/primeros-auxilios'], ['Guía de uso', '/guia'], ['Mapa de emergencia', '/mapa-publico'], ['Noticias', '/noticias'], ['Donaciones', '/donaciones'], ['Buscar familiar', '/buscar']].map(([label, href]) => (
               <Link key={label} href={href}
                 className="uppercase hover:text-yellow-400 transition-colors"
                 style={{ fontSize: '11px', letterSpacing: '0.15em', color: '#64748B' }}>
