@@ -7,7 +7,7 @@ import HeroParticles from '@/components/HeroParticles'
 import ScrollReveal from '@/components/ScrollReveal'
 import RotatingText from '@/components/RotatingText'
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 60
 
 const CATEGORY_COLORS: Record<string, { bg: string; text: string; label: string }> = {
   ayuda:     { bg: 'rgba(34,197,94,0.12)',  text: '#86EFAC', label: 'Ayuda' },
@@ -27,11 +27,13 @@ function timeAgo(date: string): string {
 }
 
 export default async function LandingPage() {
-  // admin client para conteos — RLS bloquea victims/access_requests para usuarios anónimos
-  const admin = createAdminClient()
-  // client normal para news_posts (política pública) y locations
   const supabase = await createClient()
 
+  // admin client solo disponible en runtime con service role key
+  const hasAdminKey = !!process.env.SUPABASE_SERVICE_ROLE_KEY
+  const admin = hasAdminKey ? createAdminClient() : null
+
+  const zeroCount = { count: 0 }
   const [
     { count: totalVictims },
     { count: alive },
@@ -40,11 +42,11 @@ export default async function LandingPage() {
     { count: familiasReunidas },
     { data: latestNews },
   ] = await Promise.all([
-    admin.from('victims').select('*', { count: 'exact', head: true }),
-    admin.from('victims').select('*', { count: 'exact', head: true }).eq('status', 'alive'),
+    admin ? admin.from('victims').select('*', { count: 'exact', head: true }) : zeroCount,
+    admin ? admin.from('victims').select('*', { count: 'exact', head: true }).eq('status', 'alive') : zeroCount,
     supabase.from('locations').select('*', { count: 'exact', head: true }).eq('is_active', true),
-    admin.from('victims').select('*', { count: 'exact', head: true }).eq('is_minor', true),
-    admin.from('access_requests').select('*', { count: 'exact', head: true }).eq('status', 'approved'),
+    admin ? admin.from('victims').select('*', { count: 'exact', head: true }).eq('is_minor', true) : zeroCount,
+    admin ? admin.from('access_requests').select('*', { count: 'exact', head: true }).eq('status', 'approved') : zeroCount,
     supabase.from('news_posts').select('id, title, category, published_at').eq('is_published', true).order('published_at', { ascending: false }).limit(3),
   ])
 
