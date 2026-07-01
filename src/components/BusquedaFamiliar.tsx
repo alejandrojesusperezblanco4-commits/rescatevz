@@ -28,6 +28,7 @@ export default function BusquedaFamiliar() {
 
   // Push + share
   const [pushState, setPushState] = useState<'idle' | 'loading' | 'done' | 'denied'>('idle')
+  const [pushEndpoint, setPushEndpoint] = useState<string | null>(null)
 
   async function subscribePush() {
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
@@ -47,6 +48,7 @@ export default function BusquedaFamiliar() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ subscription: sub.toJSON(), searchQuery: query }),
       })
+      setPushEndpoint(sub.endpoint)
       setPushState('done')
     } catch { setPushState('denied') }
   }
@@ -314,10 +316,29 @@ export default function BusquedaFamiliar() {
                     </button>
                   )}
                   {pushState === 'done' && (
-                    <span className="text-xs flex items-center gap-1" style={{ color: '#86EFAC' }}>
-                      <span className="material-symbols-outlined" style={{ fontSize: '14px', fontVariationSettings: "'FILL' 1" }}>check_circle</span>
-                      Notificaciones activas
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs flex items-center gap-1" style={{ color: '#86EFAC' }}>
+                        <span className="material-symbols-outlined" style={{ fontSize: '14px', fontVariationSettings: "'FILL' 1" }}>check_circle</span>
+                        Notificaciones activas
+                      </span>
+                      {pushEndpoint && (
+                        <button
+                          onClick={async () => {
+                            await fetch('/api/push/unsubscribe', {
+                              method: 'DELETE',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ endpoint: pushEndpoint }),
+                            })
+                            setPushState('idle')
+                            setPushEndpoint(null)
+                          }}
+                          className="text-xs underline"
+                          style={{ color: '#475569' }}
+                        >
+                          Cancelar
+                        </button>
+                      )}
+                    </div>
                   )}
                 </div>
               </div>

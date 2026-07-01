@@ -62,8 +62,10 @@ export async function POST(request: NextRequest) {
   }
 
   const rows = personas.map((p) => {
+    // Enmascarar cédula — solo últimos 4 dígitos visibles en notes
+    const cedulaMasked = p.cedula ? `****${p.cedula.replace(/\D/g, '').slice(-4)}` : null
     const noteParts = [
-      p.cedula ? `Cédula: ${p.cedula}` : null,
+      cedulaMasked ? `Cédula: ${cedulaMasked}` : null,
       p.notas,
       'Ingresado mediante lector de documentos de campo',
     ].filter(Boolean)
@@ -73,7 +75,7 @@ export async function POST(request: NextRequest) {
       name: p.nombre || null,
       physical_description:
         p.descripcion_fisica ||
-        `Persona registrada desde documento de campo${p.cedula ? ` — Cédula: ${p.cedula}` : ''}`,
+        `Persona registrada desde documento de campo${cedulaMasked ? ` — Cédula: ${cedulaMasked}` : ''}`,
       estimated_age: p.edad ?? null,
       is_minor: typeof p.edad === 'number' ? p.edad < 18 : false,
       status: VALID_STATUSES.includes(p.estado) ? p.estado : 'unknown',
