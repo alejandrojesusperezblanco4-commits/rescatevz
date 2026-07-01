@@ -284,6 +284,142 @@ export default async function LandingPage() {
           ))}
         </section>
 
+        {/* ── Cómo funciona ── */}
+        <section className="mb-24" style={{ borderTop: '1px solid rgba(69,70,77,0.4)', paddingTop: '5rem' }}>
+          <div className="text-center mb-12">
+            <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: '#D4A017' }}>
+              Plataforma completa
+            </p>
+            <h2 style={{ fontFamily: "'Manrope', sans-serif", fontSize: 'clamp(28px, 4vw, 42px)', fontWeight: 800, color: '#F0F4FF', lineHeight: 1.1 }}>
+              ¿Cómo funciona RescateVZ?
+            </h2>
+            <p className="mt-3 max-w-xl mx-auto text-sm leading-relaxed" style={{ color: '#94A3B8' }}>
+              Cada rol tiene acceso a las herramientas que necesita. El sistema conecta el campo con las familias de forma segura y verificada.
+            </p>
+          </div>
+
+          {/* Flujo de 3 pasos */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-14 relative">
+            {/* línea conectora en desktop */}
+            <div className="hidden md:block absolute top-8 left-1/3 right-1/3 h-px" style={{ background: 'rgba(212,160,23,0.3)' }} />
+            {[
+              { n: '01', icon: 'person_add', title: 'Se registra', desc: 'Un rescatista o médico encuentra a una persona y la registra desde su móvil en segundos, con foto y ubicación.' },
+              { n: '02', icon: 'manage_search', title: 'La familia busca', desc: 'Un familiar busca por nombre o descripción. El sistema muestra coincidencias sin exponer datos sensibles.' },
+              { n: '03', icon: 'family_restroom', title: 'Se reencuentran', desc: 'El familiar solicita acceso verificado. El coordinador aprueba y ambos quedan conectados.' },
+            ].map(step => (
+              <div key={step.n} className="flex flex-col items-center text-center p-6 rounded-2xl"
+                style={{ background: '#1e2d4a', border: '1px solid rgba(36,51,86,0.6)' }}>
+                <div className="w-12 h-12 rounded-full flex items-center justify-center mb-4 relative"
+                  style={{ background: 'rgba(212,160,23,0.12)', border: '1px solid rgba(212,160,23,0.3)' }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: '24px', color: '#D4A017', fontVariationSettings: "'FILL' 1" }}>
+                    {step.icon}
+                  </span>
+                  <span className="absolute -top-2 -right-2 text-[10px] font-black rounded-full w-5 h-5 flex items-center justify-center"
+                    style={{ background: '#D4A017', color: '#1a2744' }}>{step.n}</span>
+                </div>
+                <h3 className="font-bold mb-2" style={{ fontFamily: "'Manrope', sans-serif", color: '#F0F4FF' }}>{step.title}</h3>
+                <p className="text-sm leading-relaxed" style={{ color: '#94A3B8' }}>{step.desc}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Cards por rol */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {[
+              {
+                icon: 'construction', role: 'Rescatista', accent: '#DC2626',
+                bg: 'rgba(220,38,38,0.08)', border: 'rgba(220,38,38,0.25)',
+                features: [
+                  'Registra personas desde campo en segundos',
+                  'Sube fotos para identificación biométrica',
+                  'Importa listas de papel con visión IA',
+                  'Reporta estructuras dañadas al mapa',
+                  'Chat IA con protocolos de emergencia',
+                ],
+              },
+              {
+                icon: 'medical_services', role: 'Médico / Sanitario', accent: '#22C55E',
+                bg: 'rgba(34,197,94,0.08)', border: 'rgba(34,197,94,0.25)',
+                features: [
+                  'Accede a perfiles completos de víctimas',
+                  'Actualiza estado médico en tiempo real',
+                  'Coordina traslados entre centros activos',
+                  'Gestiona menores con protección especial',
+                  'Vista completa del mapa con ocupación',
+                ],
+              },
+              {
+                icon: 'group', role: 'Familiar', accent: '#D4A017',
+                bg: 'rgba(212,160,23,0.08)', border: 'rgba(212,160,23,0.25)',
+                features: [
+                  'Busca por nombre o descripción física',
+                  'Recibe notificación push si aparece tu búsqueda',
+                  'Solicita acceso verificado al perfil completo',
+                  'Comparte la búsqueda por WhatsApp',
+                  'Guías de primeros auxilios disponibles offline',
+                ],
+              },
+              {
+                icon: 'apartment', role: 'Ingeniero / Arquitecto', accent: '#3B82F6',
+                bg: 'rgba(59,130,246,0.08)', border: 'rgba(59,130,246,0.25)',
+                features: [
+                  'Evalúa habitabilidad con semáforo verde/amarillo/rojo',
+                  'Los resultados se publican en el mapa en tiempo real',
+                  'Referencia con mapa satelital de daños NASA',
+                  'Gestiona el registro de estructuras inspeccionadas',
+                ],
+              },
+              {
+                icon: 'shield_person', role: 'Coordinador / Admin', accent: '#A855F7',
+                bg: 'rgba(168,85,247,0.08)', border: 'rgba(168,85,247,0.25)',
+                features: [
+                  'Dashboard en tiempo real (Supabase Realtime)',
+                  'Verifica identidad de rescatistas y médicos',
+                  'Importa datos de Venezuela Reporta y documentos',
+                  'Publica noticias y alertas oficiales',
+                  'Gestiona accesos de familias con audit log completo',
+                ],
+              },
+              {
+                icon: 'smart_toy', role: 'Asistente IA', accent: '#F97316',
+                bg: 'rgba(249,115,22,0.08)', border: 'rgba(249,115,22,0.25)',
+                features: [
+                  'Disponible 24/7 para cualquier usuario',
+                  'Busca personas por nombre o descripción',
+                  'Guía con protocolos de primeros auxilios',
+                  'Informa sobre hospitales y refugios activos',
+                  'Lee y extrae datos de fotos de documentos',
+                ],
+              },
+            ].map(r => (
+              <div key={r.role} className="rounded-2xl p-5 flex flex-col gap-4"
+                style={{ background: r.bg, border: `1px solid ${r.border}` }}>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                    style={{ background: `${r.accent}22`, border: `1px solid ${r.accent}44` }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: '20px', color: r.accent, fontVariationSettings: "'FILL' 1" }}>
+                      {r.icon}
+                    </span>
+                  </div>
+                  <h3 className="font-bold text-sm" style={{ fontFamily: "'Manrope', sans-serif", color: '#F0F4FF' }}>
+                    {r.role}
+                  </h3>
+                </div>
+                <ul className="space-y-2">
+                  {r.features.map(f => (
+                    <li key={f} className="flex items-start gap-2 text-sm" style={{ color: '#94A3B8' }}>
+                      <span className="material-symbols-outlined shrink-0 mt-0.5" style={{ fontSize: '14px', color: r.accent, fontVariationSettings: "'FILL' 1" }}>
+                        check_circle
+                      </span>
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </section>
+
         {/* ── Trust section ── */}
         <section className="py-16" style={{ borderTop: '1px solid rgba(69,70,77,0.4)' }}>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-10 text-center">
