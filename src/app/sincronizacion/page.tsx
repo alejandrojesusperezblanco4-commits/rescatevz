@@ -82,6 +82,7 @@ export default function SincronizacionPage() {
   const [ingresando, setIngresando] = useState(false)
   const [ingresarError, setIngresarError] = useState<string | null>(null)
   const [ingresadoCount, setIngresadoCount] = useState<number | null>(null)
+  const [ingresarProgress, setIngresarProgress] = useState<{ done: number; total: number } | null>(null)
 
   const handleFiles = useCallback(async (files: FileList | File[]) => {
     const arr = Array.from(files).filter(f => f.type.startsWith('image/'))
@@ -160,19 +161,31 @@ export default function SincronizacionPage() {
 
   async function ingresar() {
     if (personas.length === 0) return
-    setIngresando(true); setIngresarError(null)
+    setIngresando(true); setIngresarError(null); setIngresarProgress(null)
+
+    const LOTE = 100
+    const lotes: PersonaExtraida[][] = []
+    for (let i = 0; i < personas.length; i += LOTE) lotes.push(personas.slice(i, i + LOTE))
+
+    let totalInsertados = 0
     try {
-      const res = await fetch('/api/docs/ingresar', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ personas }),
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || `Error ${res.status}`)
-      setIngresadoCount(data.insertados)
+      for (let i = 0; i < lotes.length; i++) {
+        setIngresarProgress({ done: i, total: lotes.length })
+        const res = await fetch('/api/docs/ingresar', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ personas: lotes[i] }),
+        })
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.error || `Error ${res.status}`)
+        totalInsertados += data.insertados
+      }
+      setIngresadoCount(totalInsertados)
+      setIngresarProgress(null)
       setFotos([]); setPersonas([])
     } catch (e: unknown) {
       setIngresarError(e instanceof Error ? e.message : String(e))
+      setIngresarProgress(null)
     } finally {
       setIngresando(false)
     }
@@ -453,9 +466,14 @@ export default function SincronizacionPage() {
               className="mt-4 w-full py-3 rounded-xl text-sm font-bold transition-all hover:brightness-110 disabled:opacity-50 flex items-center justify-center gap-2"
               style={{ background: '#22C55E', color: '#052e16' }}>
               {ingresando
-                ? <><span className="material-symbols-outlined animate-spin" style={{ fontSize: '18px' }}>progress_activity</span> Ingresando…</>
+                ? <><span className="material-symbols-outlined animate-spin" style={{ fontSize: '18px' }}>progress_activity</span>
+                    {ingresarProgress
+                      ? `Lote ${ingresarProgress.done + 1} de ${ingresarProgress.total}…`
+                      : 'Ingresando…'}
+                  </>
                 : <><span className="material-symbols-outlined" style={{ fontSize: '18px', fontVariationSettings: "'FILL' 1" }}>group_add</span>
-                    Confirmar e ingresar {personas.length} persona{personas.length !== 1 ? 's' : ''}</>
+                    Confirmar e ingresar {personas.length} persona{personas.length !== 1 ? 's' : ''}
+                    {personas.length > 100 && <span style={{ opacity: 0.7, fontWeight: 400 }}> ({Math.ceil(personas.length / 100)} lotes)</span>}</>
               }
             </button>
           </div>
