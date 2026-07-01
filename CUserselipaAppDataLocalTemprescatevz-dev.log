@@ -99,3 +99,4 @@
 ⚠ Slow filesystem detected. The benchmark took 256ms. If C:\Users\elipa\rescatevz\.next/dev is a network drive, consider moving it to a local folder.
 See more: https://nextjs.org/docs/app/guides/local-development
 
+✓ Compiled in 2.8s

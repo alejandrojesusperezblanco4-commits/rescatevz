@@ -157,6 +157,20 @@ export default async function VictimaPage({ params }: { params: Promise<{ id: st
             />
           )}
 
+          {/* Compartir card para redes sociales */}
+          {!victim.is_minor && (
+            <a
+              href={`/compartir/${victim.id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 w-full mt-4 py-2.5 rounded-xl text-sm font-bold transition-all hover:brightness-110 justify-center"
+              style={{ background: 'rgba(34,197,94,0.10)', color: '#86EFAC', border: '1px solid rgba(34,197,94,0.25)' }}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: '18px', fontVariationSettings: "'FILL' 1" }}>share</span>
+              Compartir para búsqueda en redes
+            </a>
+          )}
+
           <VictimaCompartir
             victimId={victim.id}
             victimName={victim.name}

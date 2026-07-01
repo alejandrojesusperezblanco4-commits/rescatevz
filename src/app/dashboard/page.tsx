@@ -111,6 +111,8 @@ export default async function DashboardPage() {
                 { href: '/admin/noticias', icon: 'edit_note', label: 'Noticias', desc: 'Publicar actualizaciones', color: '#3B82F6' },
                 { href: '/ubicaciones', icon: 'add_location', label: 'Ubicaciones', desc: 'Hospitales y refugios', color: '#22C55E' },
                 { href: '/menores', icon: 'child_care', label: 'Menores', desc: 'Reportes de niños', color: '#A855F7' },
+                { href: '/admin/analytics', icon: 'bar_chart', label: 'Analytics', desc: 'Evolución de la emergencia', color: '#F97316' },
+                { href: '/api/admin/export', icon: 'download', label: 'Exportar CSV', desc: 'Base de datos completa', color: '#06B6D4' },
               ].map(tool => (
                 <Link key={tool.href} href={tool.href}
                   className="rounded-xl p-4 flex flex-col gap-2 transition-all hover:brightness-110 hover:scale-[1.02]"
