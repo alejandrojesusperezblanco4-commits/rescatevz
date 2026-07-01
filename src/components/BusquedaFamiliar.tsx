@@ -26,6 +26,38 @@ export default function BusquedaFamiliar() {
   const [solicitudSuccess, setSolicitudSuccess] = useState(false)
   const [solicitudError, setSolicitudError] = useState('')
 
+  // Push + share
+  const [pushState, setPushState] = useState<'idle' | 'loading' | 'done' | 'denied'>('idle')
+
+  async function subscribePush() {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+      setPushState('denied'); return
+    }
+    setPushState('loading')
+    try {
+      const permission = await Notification.requestPermission()
+      if (permission !== 'granted') { setPushState('denied'); return }
+      const reg = await navigator.serviceWorker.ready
+      const sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
+      })
+      await fetch('/api/push/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subscription: sub.toJSON(), searchQuery: query }),
+      })
+      setPushState('done')
+    } catch { setPushState('denied') }
+  }
+
+  function shareWhatsApp() {
+    const text = encodeURIComponent(
+      `🔍 Busco a ${query} en Venezuela. Si tienes información, entra a rescate-vz.com/buscar — plataforma humanitaria oficial. #RescateVZ #Venezuela`
+    )
+    window.open(`https://wa.me/?text=${text}`, '_blank')
+  }
+
   // Reporte de menor (sin búsqueda automática)
   const [showMenorForm, setShowMenorForm] = useState(false)
   const [menorNombre, setMenorNombre] = useState('')
@@ -204,10 +236,37 @@ export default function BusquedaFamiliar() {
         {results !== null && (
           <div>
             {results.length === 0 ? (
-              <div className="text-center py-12 text-gray-500">
+              <div className="text-center py-10">
                 <div className="text-4xl mb-3">🔍</div>
                 <p className="font-medium text-gray-300">No se encontraron coincidencias</p>
-                <p className="text-sm mt-1">Intenta con un nombre diferente o características físicas</p>
+                <p className="text-sm mt-1 mb-6 text-gray-500">Intenta con un nombre diferente o características físicas</p>
+
+                {/* Notificarme + Compartir cuando no hay resultados */}
+                <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                  {pushState === 'idle' && (
+                    <button onClick={subscribePush}
+                      className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all hover:brightness-110"
+                      style={{ background: 'rgba(212,160,23,0.12)', border: '1px solid rgba(212,160,23,0.35)', color: '#FCD34D' }}>
+                      <span className="material-symbols-outlined" style={{ fontSize: '18px', fontVariationSettings: "'FILL' 1" }}>notifications_active</span>
+                      Notificarme si aparece
+                    </button>
+                  )}
+                  {pushState === 'loading' && (
+                    <span className="text-sm text-gray-400">Activando notificaciones…</span>
+                  )}
+                  {pushState === 'done' && (
+                    <span className="text-sm" style={{ color: '#86EFAC' }}>✓ Te avisaremos si alguien coincide con «{query}»</span>
+                  )}
+                  {pushState === 'denied' && (
+                    <span className="text-xs text-gray-500">Notificaciones no disponibles en este dispositivo</span>
+                  )}
+                  <button onClick={shareWhatsApp}
+                    className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all hover:brightness-110"
+                    style={{ background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.3)', color: '#86EFAC' }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: '18px', fontVariationSettings: "'FILL' 1" }}>share</span>
+                    Compartir en WhatsApp
+                  </button>
+                </div>
               </div>
             ) : (
               <div>
@@ -236,6 +295,30 @@ export default function BusquedaFamiliar() {
                       </button>
                     </div>
                   ))}
+                </div>
+
+                {/* Compartir cuando sí hay resultados */}
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <button onClick={shareWhatsApp}
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all hover:brightness-110"
+                    style={{ background: 'rgba(34,197,94,0.10)', border: '1px solid rgba(34,197,94,0.25)', color: '#86EFAC' }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: '15px', fontVariationSettings: "'FILL' 1" }}>share</span>
+                    Compartir búsqueda
+                  </button>
+                  {pushState === 'idle' && (
+                    <button onClick={subscribePush}
+                      className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all hover:brightness-110"
+                      style={{ background: 'rgba(212,160,23,0.10)', border: '1px solid rgba(212,160,23,0.25)', color: '#FCD34D' }}>
+                      <span className="material-symbols-outlined" style={{ fontSize: '15px', fontVariationSettings: "'FILL' 1" }}>notifications_active</span>
+                      Notificarme de actualizaciones
+                    </button>
+                  )}
+                  {pushState === 'done' && (
+                    <span className="text-xs flex items-center gap-1" style={{ color: '#86EFAC' }}>
+                      <span className="material-symbols-outlined" style={{ fontSize: '14px', fontVariationSettings: "'FILL' 1" }}>check_circle</span>
+                      Notificaciones activas
+                    </span>
+                  )}
                 </div>
               </div>
             )}

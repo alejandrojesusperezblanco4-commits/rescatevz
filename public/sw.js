@@ -105,6 +105,37 @@ self.addEventListener('fetch', event => {
   event.respondWith(fetch(request).catch(() => caches.match('/offline.html')))
 })
 
+// ─── Push notifications ───────────────────────────────────
+
+self.addEventListener('push', event => {
+  if (!event.data) return
+  let payload
+  try { payload = event.data.json() } catch { return }
+
+  event.waitUntil(
+    self.registration.showNotification(payload.title || 'RescateVZ', {
+      body: payload.body || '',
+      icon: payload.icon || '/favicon.svg',
+      badge: payload.badge || '/favicon.svg',
+      data: { url: payload.url || '/' },
+      vibrate: [200, 100, 200],
+    })
+  )
+})
+
+self.addEventListener('notificationclick', event => {
+  event.notification.close()
+  const url = event.notification.data?.url || '/'
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clientList => {
+      for (const client of clientList) {
+        if (client.url.includes(url) && 'focus' in client) return client.focus()
+      }
+      if (clients.openWindow) return clients.openWindow(url)
+    })
+  )
+})
+
 // ─── Helpers ──────────────────────────────────────────────
 
 async function cacheFirst(request, cacheName = CACHE_NAME) {

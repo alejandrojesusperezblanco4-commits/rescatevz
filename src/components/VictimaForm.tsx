@@ -77,7 +77,7 @@ export default function VictimaForm({ locations, userId }: VictimaFormProps) {
       resource_type: 'victim',
     })
 
-    // Sync a Venezuela Reporta — fire-and-forget, no bloqueamos al usuario
+    // Sync a Venezuela Reporta — fire-and-forget
     if (newVictim?.id && !isMinor && status !== 'deceased') {
       fetch('/api/vr/publicar', {
         method: 'POST',
@@ -85,6 +85,13 @@ export default function VictimaForm({ locations, userId }: VictimaFormProps) {
         body: JSON.stringify({ victimId: newVictim.id }),
       }).catch(() => {})
     }
+
+    // Notificaciones push a suscriptores — fire-and-forget
+    fetch('/api/push/notify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ foundLocation: foundLocation.trim() }),
+    }).catch(() => {})
 
     setSuccess(true)
     setLoading(false)

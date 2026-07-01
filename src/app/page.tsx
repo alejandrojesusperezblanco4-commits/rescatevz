@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import StatsCounter from '@/components/StatsCounter'
+import ActivityFeed from '@/components/ActivityFeed'
 
 const CATEGORY_COLORS: Record<string, { bg: string; text: string; label: string }> = {
   ayuda:     { bg: 'rgba(34,197,94,0.12)',  text: '#86EFAC', label: 'Ayuda' },
@@ -27,12 +28,14 @@ export default async function LandingPage() {
     { count: alive },
     { count: locations },
     { count: minors },
+    { count: familiasReunidas },
     { data: latestNews },
   ] = await Promise.all([
     supabase.from('victims').select('*', { count: 'exact', head: true }),
     supabase.from('victims').select('*', { count: 'exact', head: true }).eq('status', 'alive'),
     supabase.from('locations').select('*', { count: 'exact', head: true }).eq('is_active', true),
     supabase.from('victims').select('*', { count: 'exact', head: true }).eq('is_minor', true),
+    supabase.from('access_requests').select('*', { count: 'exact', head: true }).eq('status', 'approved'),
     supabase.from('news_posts').select('id, title, category, published_at').eq('is_published', true).order('published_at', { ascending: false }).limit(3),
   ])
 
@@ -145,11 +148,17 @@ export default async function LandingPage() {
             </Link>
           </div>
 
-          {alive !== null && alive > 0 && (
-            <p className="text-sm" style={{ color: '#64748B' }}>
-              <span style={{ color: '#22C55E', fontWeight: 600 }}>{(alive).toLocaleString('es-VE')}</span> personas con vida confirmada en nuestra base de datos
-            </p>
-          )}
+          <div className="flex flex-wrap justify-center gap-4 text-sm mt-1" style={{ color: '#64748B' }}>
+            {alive !== null && alive > 0 && (
+              <span><span style={{ color: '#22C55E', fontWeight: 600 }}>{alive.toLocaleString('es-VE')}</span> con vida confirmada</span>
+            )}
+            {familiasReunidas !== null && familiasReunidas > 0 && (
+              <span>
+                <span className="material-symbols-outlined" style={{ fontSize: '14px', verticalAlign: 'middle', color: '#D4A017', fontVariationSettings: "'FILL' 1" }}>family_restroom</span>
+                {' '}<span style={{ color: '#D4A017', fontWeight: 600 }}>{familiasReunidas.toLocaleString('es-VE')}</span> familias ya encontraron respuesta
+              </span>
+            )}
+          </div>
         </section>
 
         {/* ── Stats ── */}
@@ -164,6 +173,9 @@ export default async function LandingPage() {
             <StatsCounter stats={stats} />
           </div>
         </section>
+
+        {/* ── Feed de actividad ── */}
+        <ActivityFeed />
 
         {/* ── Últimas noticias ── */}
         {latestNews && latestNews.length > 0 && (
