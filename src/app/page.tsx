@@ -290,6 +290,140 @@ export default async function LandingPage() {
           ))}
         </section>
 
+        {/* ── Features ── */}
+        <section className="mb-24" style={{ borderTop: '1px solid rgba(69,70,77,0.4)', paddingTop: '5rem' }}>
+          <div className="text-center mb-12">
+            <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: '#D4A017' }}>
+              Tecnología de emergencia
+            </p>
+            <h2 style={{ fontFamily: "'Manrope', sans-serif", fontSize: 'clamp(28px, 4vw, 42px)', fontWeight: 800, color: '#F0F4FF', lineHeight: 1.1 }}>
+              Herramientas que no existen<br />en ninguna otra plataforma
+            </h2>
+            <p className="mt-3 max-w-lg mx-auto text-sm leading-relaxed" style={{ color: '#94A3B8' }}>
+              Construidas específicamente para el terremoto de Venezuela. Cada función fue diseñada para el campo, no para una oficina.
+            </p>
+          </div>
+
+          {/* 2 hero cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            {/* Biométrico */}
+            <div className="relative rounded-2xl p-6 overflow-hidden flex flex-col justify-between min-h-[220px]"
+              style={{ background: 'linear-gradient(135deg, rgba(139,92,246,0.15) 0%, rgba(139,92,246,0.05) 100%)', border: '1px solid rgba(139,92,246,0.3)' }}>
+              <div className="absolute top-0 right-0 w-40 h-40 rounded-full pointer-events-none"
+                style={{ background: 'radial-gradient(circle, rgba(139,92,246,0.2) 0%, transparent 70%)', transform: 'translate(30%, -30%)' }} />
+              <div>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-12 h-12 rounded-2xl flex items-center justify-center"
+                    style={{ background: 'rgba(139,92,246,0.2)', border: '1px solid rgba(139,92,246,0.4)' }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: '26px', color: '#A78BFA', fontVariationSettings: "'FILL' 1" }}>face_retouching_natural</span>
+                  </div>
+                  <span className="text-xs font-bold px-2 py-0.5 rounded-full uppercase tracking-wider"
+                    style={{ background: 'rgba(139,92,246,0.15)', color: '#C4B5FD', border: '1px solid rgba(139,92,246,0.3)' }}>
+                    Inteligencia Artificial
+                  </span>
+                </div>
+                <h3 className="text-xl font-bold mb-2" style={{ fontFamily: "'Manrope', sans-serif", color: '#F0F4FF' }}>
+                  Matching biométrico con IA
+                </h3>
+                <p className="text-sm leading-relaxed" style={{ color: '#94A3B8' }}>
+                  Compara fotos de víctimas para identificar personas no reconocidas. Detecta coincidencias aunque la imagen sea de baja calidad o esté tomada desde ángulos distintos.
+                </p>
+              </div>
+              <div className="flex items-center gap-1.5 mt-4">
+                <span className="w-1.5 h-1.5 rounded-full" style={{ background: '#A78BFA' }} />
+                <span className="text-xs" style={{ color: '#7C3AED' }}>Solo disponible en RescateVZ</span>
+              </div>
+            </div>
+
+            {/* Lector documentos */}
+            <div className="relative rounded-2xl p-6 overflow-hidden flex flex-col justify-between min-h-[220px]"
+              style={{ background: 'linear-gradient(135deg, rgba(245,158,11,0.15) 0%, rgba(245,158,11,0.05) 100%)', border: '1px solid rgba(245,158,11,0.3)' }}>
+              <div className="absolute top-0 right-0 w-40 h-40 rounded-full pointer-events-none"
+                style={{ background: 'radial-gradient(circle, rgba(245,158,11,0.2) 0%, transparent 70%)', transform: 'translate(30%, -30%)' }} />
+              <div>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-12 h-12 rounded-2xl flex items-center justify-center"
+                    style={{ background: 'rgba(245,158,11,0.2)', border: '1px solid rgba(245,158,11,0.4)' }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: '26px', color: '#FCD34D', fontVariationSettings: "'FILL' 1" }}>document_scanner</span>
+                  </div>
+                  <span className="text-xs font-bold px-2 py-0.5 rounded-full uppercase tracking-wider"
+                    style={{ background: 'rgba(245,158,11,0.15)', color: '#FCD34D', border: '1px solid rgba(245,158,11,0.3)' }}>
+                    Visión IA
+                  </span>
+                </div>
+                <h3 className="text-xl font-bold mb-2" style={{ fontFamily: "'Manrope', sans-serif", color: '#F0F4FF' }}>
+                  Lector de listas de campo
+                </h3>
+                <p className="text-sm leading-relaxed" style={{ color: '#94A3B8' }}>
+                  Fotografía cualquier lista manuscrita o impresa — un hospital, un refugio, un parte de rescate — y la IA extrae nombre, cédula, edad y estado de cada persona. Sin escribir nada a mano.
+                </p>
+              </div>
+              <div className="flex items-center gap-1.5 mt-4">
+                <span className="w-1.5 h-1.5 rounded-full" style={{ background: '#FCD34D' }} />
+                <span className="text-xs" style={{ color: '#92400E' }}>327 personas importadas en la primera sesión</span>
+              </div>
+            </div>
+          </div>
+
+          {/* 6 cards menores */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[
+              {
+                icon: 'notifications_active', title: 'Alertas en tiempo real',
+                desc: 'El móvil te avisa en cuanto aparece una persona que coincide con tu búsqueda. Sin tener que volver a entrar a la app.',
+                accent: '#EF4444', tag: 'Push notifications',
+              },
+              {
+                icon: 'map', title: 'Mapa con capacidad viva',
+                desc: 'Hospitales y refugios con su ocupación real actualizada al momento. Estructuras evaluadas por ingenieros con semáforo de habitabilidad.',
+                accent: '#3B82F6', tag: 'Tiempo real',
+              },
+              {
+                icon: 'smart_toy', title: 'Chat IA disponible 24/7',
+                desc: 'Busca personas, consulta protocolos médicos o encuentra hospitales activos. Funciona sin login y sin internet para las guías.',
+                accent: '#10B981', tag: 'Sin registro',
+              },
+              {
+                icon: 'sync', title: 'Sincronización nacional',
+                desc: 'Cruza tu base de datos con Venezuela Reporta automáticamente. Detecta si alguien ya fue reportado como buscado o ingresado a un hospital.',
+                accent: '#06B6D4', tag: 'Venezuela Reporta',
+              },
+              {
+                icon: 'install_mobile', title: 'App instalable offline',
+                desc: 'Instálala en tu móvil como app nativa. Las guías de primeros auxilios, el mapa y el chat funcionan sin conexión a internet.',
+                accent: '#F97316', tag: 'PWA',
+              },
+              {
+                icon: 'verified_user', title: 'Privacidad por diseño',
+                desc: 'Los menores nunca aparecen en búsquedas públicas. Rescatistas y médicos son verificados por un coordinador antes de acceder a datos sensibles.',
+                accent: '#6366F1', tag: 'Seguridad',
+              },
+            ].map(f => (
+              <div key={f.title} className="rounded-2xl p-5 flex flex-col gap-3 group transition-all duration-200 hover:scale-[1.02]"
+                style={{ background: '#1e2d4a', border: `1px solid rgba(36,51,86,0.6)` }}>
+                <div className="flex items-start justify-between">
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                    style={{ background: `${f.accent}18`, border: `1px solid ${f.accent}40` }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: '20px', color: f.accent, fontVariationSettings: "'FILL' 1" }}>
+                      {f.icon}
+                    </span>
+                  </div>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider"
+                    style={{ background: `${f.accent}15`, color: f.accent, border: `1px solid ${f.accent}35` }}>
+                    {f.tag}
+                  </span>
+                </div>
+                <div>
+                  <h3 className="font-bold mb-1.5" style={{ fontFamily: "'Manrope', sans-serif", fontSize: '15px', color: '#F0F4FF' }}>
+                    {f.title}
+                  </h3>
+                  <p className="text-sm leading-relaxed" style={{ color: '#94A3B8' }}>{f.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
         {/* ── Cómo funciona ── */}
         <section className="mb-24" style={{ borderTop: '1px solid rgba(69,70,77,0.4)', paddingTop: '5rem' }}>
           <div className="text-center mb-12">
