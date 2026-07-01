@@ -3,6 +3,9 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import StatsCounter from '@/components/StatsCounter'
 import ActivityFeed from '@/components/ActivityFeed'
+import HeroParticles from '@/components/HeroParticles'
+import ScrollReveal from '@/components/ScrollReveal'
+import RotatingText from '@/components/RotatingText'
 
 export const dynamic = 'force-dynamic'
 
@@ -100,10 +103,13 @@ export default async function LandingPage() {
       <main className="w-full max-w-[1280px] mx-auto px-6">
 
         {/* ── Hero ── */}
-        <section className="py-20 md:py-28 text-center relative">
+        <section className="py-20 md:py-28 text-center relative overflow-hidden">
+          {/* Partículas flotantes */}
+          <HeroParticles />
+
           {/* Dot grid background */}
           <div className="absolute inset-0 pointer-events-none" style={{
-            backgroundImage: 'radial-gradient(circle, rgba(212,160,23,0.15) 1px, transparent 1px)',
+            backgroundImage: 'radial-gradient(circle, rgba(212,160,23,0.12) 1px, transparent 1px)',
             backgroundSize: '32px 32px',
             maskImage: 'radial-gradient(ellipse 80% 60% at 50% 50%, black 40%, transparent 100%)',
           }} />
@@ -120,8 +126,8 @@ export default async function LandingPage() {
           <h1 className="mb-6 max-w-3xl mx-auto relative"
             style={{ fontFamily: "'Manrope', sans-serif", fontSize: 'clamp(36px, 6vw, 64px)', lineHeight: '1.05', letterSpacing: '-0.02em', fontWeight: 800 }}>
             Venezuela,{' '}
-            <span style={{
-              background: 'linear-gradient(135deg, #f6be39 0%, #D4A017 50%, #ffdd70 100%)',
+            <span className="animate-gradient" style={{
+              background: 'linear-gradient(135deg, #f6be39, #D4A017, #ffdd70, #f6be39)',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
               backgroundClip: 'text',
@@ -130,19 +136,19 @@ export default async function LandingPage() {
             </span>
           </h1>
 
-          <p className="max-w-2xl mx-auto mb-10 leading-relaxed" style={{ color: '#c5c6ce', fontSize: '17px' }}>
-            Registra a quien encontraste. Busca a quien perdiste. Coordina el rescate.
-            <br className="hidden md:block" />
+          <p className="max-w-2xl mx-auto mb-2 leading-relaxed" style={{ color: '#c5c6ce', fontSize: '17px' }}>
+            <RotatingText />
+          </p>
+          <p className="max-w-2xl mx-auto mb-10 text-sm" style={{ color: '#64748B' }}>
             Plataforma humanitaria en tiempo real — abierta, sin registro previo.
           </p>
 
           <div className="flex flex-wrap justify-center gap-4 mb-6">
             <Link href="/buscar"
-              className="px-8 py-4 rounded-xl font-bold flex items-center gap-2 transition-all hover:scale-[1.03] active:scale-95"
+              className="px-8 py-4 rounded-xl font-bold flex items-center gap-2 transition-all hover:scale-[1.03] active:scale-95 animate-glow"
               style={{
                 background: '#D4A017',
                 color: '#402d00',
-                boxShadow: '0 0 24px rgba(212,160,23,0.35), 0 4px 12px rgba(0,0,0,0.3)',
               }}>
               <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>person_search</span>
               INICIAR BÚSQUEDA
@@ -168,6 +174,7 @@ export default async function LandingPage() {
         </section>
 
         {/* ── Stats ── */}
+        <ScrollReveal>
         <section className="mb-8">
           <div className="flex items-center gap-2 mb-4">
             <span className="inline-block w-2 h-2 rounded-full animate-pulse" style={{ background: '#22C55E' }} />
@@ -179,9 +186,12 @@ export default async function LandingPage() {
             <StatsCounter stats={stats} />
           </div>
         </section>
+        </ScrollReveal>
 
         {/* ── Feed de actividad ── */}
-        <ActivityFeed />
+        <ScrollReveal delay={100}>
+          <ActivityFeed />
+        </ScrollReveal>
 
         {/* ── Últimas noticias ── */}
         {latestNews && latestNews.length > 0 && (
@@ -307,6 +317,7 @@ export default async function LandingPage() {
           {/* 2 hero cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             {/* Biométrico */}
+            <ScrollReveal delay={0} direction="left">
             <div className="relative rounded-2xl p-6 overflow-hidden flex flex-col justify-between min-h-[220px]"
               style={{ background: 'linear-gradient(135deg, rgba(139,92,246,0.15) 0%, rgba(139,92,246,0.05) 100%)', border: '1px solid rgba(139,92,246,0.3)' }}>
               <div className="absolute top-0 right-0 w-40 h-40 rounded-full pointer-events-none"
@@ -334,8 +345,10 @@ export default async function LandingPage() {
                 <span className="text-xs" style={{ color: '#7C3AED' }}>Solo disponible en RescateVZ</span>
               </div>
             </div>
+            </ScrollReveal>
 
             {/* Lector documentos */}
+            <ScrollReveal delay={120} direction="right">
             <div className="relative rounded-2xl p-6 overflow-hidden flex flex-col justify-between min-h-[220px]"
               style={{ background: 'linear-gradient(135deg, rgba(245,158,11,0.15) 0%, rgba(245,158,11,0.05) 100%)', border: '1px solid rgba(245,158,11,0.3)' }}>
               <div className="absolute top-0 right-0 w-40 h-40 rounded-full pointer-events-none"
@@ -363,6 +376,7 @@ export default async function LandingPage() {
                 <span className="text-xs" style={{ color: '#92400E' }}>327 personas importadas en la primera sesión</span>
               </div>
             </div>
+            </ScrollReveal>
           </div>
 
           {/* 6 cards menores */}
@@ -398,8 +412,9 @@ export default async function LandingPage() {
                 desc: 'Los menores nunca aparecen en búsquedas públicas. Rescatistas y médicos son verificados por un coordinador antes de acceder a datos sensibles.',
                 accent: '#6366F1', tag: 'Seguridad',
               },
-            ].map(f => (
-              <div key={f.title} className="rounded-2xl p-5 flex flex-col gap-3 group transition-all duration-200 hover:scale-[1.02]"
+            ].map((f, i) => (
+              <ScrollReveal key={f.title} delay={i * 80} direction="up">
+              <div className="rounded-2xl p-5 flex flex-col gap-3 group transition-all duration-200 hover:scale-[1.02] h-full"
                 style={{ background: '#1e2d4a', border: `1px solid rgba(36,51,86,0.6)` }}>
                 <div className="flex items-start justify-between">
                   <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
@@ -420,6 +435,7 @@ export default async function LandingPage() {
                   <p className="text-sm leading-relaxed" style={{ color: '#94A3B8' }}>{f.desc}</p>
                 </div>
               </div>
+              </ScrollReveal>
             ))}
           </div>
         </section>
