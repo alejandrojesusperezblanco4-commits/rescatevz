@@ -70,10 +70,10 @@ export default function ChatWidget() {
 
   return (
     <>
-      {/* Botón flotante */}
+      {/* Botón flotante — izquierda en móvil para no chocar con el FAB de registro */}
       <button
         onClick={() => setOpen(o => !o)}
-        className="fixed bottom-5 right-5 z-50 w-14 h-14 rounded-full shadow-2xl flex items-center justify-center text-white text-2xl transition-all hover:scale-110 active:scale-95"
+        className="fixed z-50 w-14 h-14 rounded-full shadow-2xl flex items-center justify-center text-white text-2xl transition-all hover:scale-110 active:scale-95 left-4 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] sm:left-auto sm:right-5 sm:bottom-5"
         style={{ background: open ? '#374151' : '#CF142B' }}
         aria-label="Abrir asistente IA"
       >
@@ -83,8 +83,9 @@ export default function ChatWidget() {
       {/* Panel de chat */}
       {open && (
         <div
-          className="fixed bottom-24 right-4 z-50 flex flex-col rounded-2xl shadow-2xl border border-white/10 overflow-hidden"
+          className="fixed z-50 flex flex-col rounded-2xl shadow-2xl border border-white/10 overflow-hidden left-4 sm:left-auto sm:right-4"
           style={{
+            bottom: 'calc(8.5rem + env(safe-area-inset-bottom))',
             width: 'min(380px, calc(100vw - 32px))',
             height: 'min(520px, calc(100vh - 120px))',
             background: '#0D1117',

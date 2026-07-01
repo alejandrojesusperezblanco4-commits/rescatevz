@@ -283,7 +283,6 @@ export default function SincronizacionPage() {
           ref={fileInputRef}
           type="file"
           accept="image/*"
-          capture="environment"
           multiple
           className="hidden"
           onChange={(e) => { if (e.target.files) handleFiles(e.target.files); e.target.value = '' }}
