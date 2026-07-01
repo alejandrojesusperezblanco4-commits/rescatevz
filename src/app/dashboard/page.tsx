@@ -99,7 +99,36 @@ export default async function DashboardPage() {
           </div>
         )}
 
-        {/* 5. Grid principal */}
+        {/* 5. Herramientas admin */}
+        {profile.role === 'admin' && (
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: '#475569' }}>
+              Herramientas de administración
+            </p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {[
+                { href: '/sincronizacion', icon: 'document_scanner', label: 'Importar listas', desc: 'Fotos de documentos de campo', color: '#D4A017' },
+                { href: '/admin/noticias', icon: 'edit_note', label: 'Noticias', desc: 'Publicar actualizaciones', color: '#3B82F6' },
+                { href: '/ubicaciones', icon: 'add_location', label: 'Ubicaciones', desc: 'Hospitales y refugios', color: '#22C55E' },
+                { href: '/menores', icon: 'child_care', label: 'Menores', desc: 'Reportes de niños', color: '#A855F7' },
+              ].map(tool => (
+                <Link key={tool.href} href={tool.href}
+                  className="rounded-xl p-4 flex flex-col gap-2 transition-all hover:brightness-110 hover:scale-[1.02]"
+                  style={{ background: '#1e2d4a', border: `1px solid rgba(36,51,86,0.5)` }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: '24px', color: tool.color, fontVariationSettings: "'FILL' 1" }}>
+                    {tool.icon}
+                  </span>
+                  <div>
+                    <p className="text-sm font-semibold" style={{ color: '#F0F4FF' }}>{tool.label}</p>
+                    <p className="text-xs" style={{ color: '#64748B' }}>{tool.desc}</p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* 6. Grid principal */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Últimos registros */}
           <div className="rounded-lg flex flex-col"
