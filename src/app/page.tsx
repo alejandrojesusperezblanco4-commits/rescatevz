@@ -461,6 +461,143 @@ export default async function LandingPage() {
           </div>
         </section>
 
+        {/* ── Novedades ── */}
+        <section className="mb-24" style={{ borderTop: '1px solid rgba(69,70,77,0.4)', paddingTop: '5rem' }}>
+          <div className="text-center mb-12">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest mb-4"
+              style={{ background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.35)', color: '#22C55E' }}>
+              <span className="w-1.5 h-1.5 rounded-full animate-pulse inline-block" style={{ background: '#22C55E' }} />
+              Actualización 2 jul 2026
+            </span>
+            <h2 style={{ fontFamily: "'Manrope', sans-serif", fontSize: 'clamp(28px, 4vw, 42px)', fontWeight: 800, color: '#F0F4FF', lineHeight: 1.1 }}>
+              Nuevas funcionalidades
+            </h2>
+            <p className="mt-3 max-w-lg mx-auto text-sm leading-relaxed" style={{ color: '#94A3B8' }}>
+              La plataforma crece con cada hora de emergencia. Estas son las últimas herramientas añadidas hoy.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+            {/* Alertas sísmicas */}
+            <ScrollReveal delay={0} direction="left">
+            <Link href="/sismos" className="group relative rounded-2xl p-6 flex flex-col gap-4 transition-all hover:scale-[1.01] overflow-hidden"
+              style={{ background: 'linear-gradient(135deg, rgba(220,38,38,0.12) 0%, rgba(220,38,38,0.04) 100%)', border: '1px solid rgba(220,38,38,0.3)' }}>
+              <div className="absolute top-0 right-0 w-48 h-48 pointer-events-none"
+                style={{ background: 'radial-gradient(circle, rgba(220,38,38,0.15) 0%, transparent 70%)', transform: 'translate(30%,-30%)' }} />
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"
+                  style={{ background: 'rgba(220,38,38,0.2)', border: '1px solid rgba(220,38,38,0.4)' }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: '26px', color: '#FCA5A5', fontVariationSettings: "'FILL' 1" }}>sensors</span>
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
+                    <h3 className="text-lg font-bold" style={{ fontFamily: "'Manrope', sans-serif", color: '#F0F4FF' }}>Alertas sísmicas en tiempo real</h3>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase"
+                      style={{ background: 'rgba(220,38,38,0.2)', color: '#FCA5A5', border: '1px solid rgba(220,38,38,0.4)' }}>Nuevo</span>
+                  </div>
+                  <p className="text-sm leading-relaxed" style={{ color: '#94A3B8' }}>
+                    Recibe una notificación push en tu móvil en cuanto se detecte un sismo ≥ M4.0 en Venezuela o sus alrededores. Datos en tiempo real de la red USGS, verificados cada 10 minutos automáticamente.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 text-xs" style={{ color: '#64748B' }}>
+                <span className="flex items-center gap-1"><span className="material-symbols-outlined" style={{ fontSize: '13px' }}>notifications_active</span> Push automático</span>
+                <span className="flex items-center gap-1"><span className="material-symbols-outlined" style={{ fontSize: '13px' }}>schedule</span> Cada 10 minutos</span>
+                <span className="flex items-center gap-1 ml-auto font-bold group-hover:underline" style={{ color: '#FCA5A5' }}>Ver sismos →</span>
+              </div>
+            </Link>
+            </ScrollReveal>
+
+            {/* Módulo de salud */}
+            <ScrollReveal delay={100} direction="right">
+            <Link href="/salud" className="group relative rounded-2xl p-6 flex flex-col gap-4 transition-all hover:scale-[1.01] overflow-hidden"
+              style={{ background: 'linear-gradient(135deg, rgba(239,68,68,0.10) 0%, rgba(239,68,68,0.03) 100%)', border: '1px solid rgba(239,68,68,0.25)' }}>
+              <div className="absolute top-0 right-0 w-48 h-48 pointer-events-none"
+                style={{ background: 'radial-gradient(circle, rgba(239,68,68,0.12) 0%, transparent 70%)', transform: 'translate(30%,-30%)' }} />
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"
+                  style={{ background: 'rgba(239,68,68,0.18)', border: '1px solid rgba(239,68,68,0.35)' }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: '26px', color: '#FCA5A5', fontVariationSettings: "'FILL' 1" }}>health_and_safety</span>
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
+                    <h3 className="text-lg font-bold" style={{ fontFamily: "'Manrope', sans-serif", color: '#F0F4FF' }}>Módulo de salud pública</h3>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase"
+                      style={{ background: 'rgba(239,68,68,0.18)', color: '#FCA5A5', border: '1px solid rgba(239,68,68,0.35)' }}>Nuevo</span>
+                  </div>
+                  <p className="text-sm leading-relaxed" style={{ color: '#94A3B8' }}>
+                    Nivel de riesgo epidemiológico actualizado por coordinadores, guías sobre cólera, leptospirosis, tifoidea y otras enfermedades post-terremoto, más alertas sanitarias oficiales y centros de salud activos.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 text-xs" style={{ color: '#64748B' }}>
+                <span className="flex items-center gap-1"><span className="material-symbols-outlined" style={{ fontSize: '13px' }}>crisis_alert</span> Nivel de riesgo en tiempo real</span>
+                <span className="flex items-center gap-1"><span className="material-symbols-outlined" style={{ fontSize: '13px' }}>local_hospital</span> Centros activos</span>
+                <span className="flex items-center gap-1 ml-auto font-bold group-hover:underline" style={{ color: '#FCA5A5' }}>Ver módulo →</span>
+              </div>
+            </Link>
+            </ScrollReveal>
+
+            {/* Panel fallecidos */}
+            <ScrollReveal delay={150} direction="left">
+            <div className="rounded-2xl p-6 flex flex-col gap-4"
+              style={{ background: 'linear-gradient(135deg, rgba(100,116,139,0.10) 0%, rgba(100,116,139,0.03) 100%)', border: '1px solid rgba(100,116,139,0.25)' }}>
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"
+                  style={{ background: 'rgba(100,116,139,0.18)', border: '1px solid rgba(100,116,139,0.35)' }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: '26px', color: '#CBD5E1', fontVariationSettings: "'FILL' 1" }}>monitoring</span>
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
+                    <h3 className="text-lg font-bold" style={{ fontFamily: "'Manrope', sans-serif", color: '#F0F4FF' }}>Registro y seguimiento de fallecidos</h3>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase"
+                      style={{ background: 'rgba(100,116,139,0.18)', color: '#CBD5E1', border: '1px solid rgba(100,116,139,0.35)' }}>Nuevo</span>
+                  </div>
+                  <p className="text-sm leading-relaxed" style={{ color: '#94A3B8' }}>
+                    Panel dedicado para coordinadores con el registro completo de fallecidos, tendencia de mortalidad por día, tasa sobre total de víctimas y exportación CSV. Los datos son tratados con la máxima discreción.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 text-xs" style={{ color: '#64748B' }}>
+                <span className="flex items-center gap-1"><span className="material-symbols-outlined" style={{ fontSize: '13px' }}>bar_chart</span> Tendencia diaria</span>
+                <span className="flex items-center gap-1"><span className="material-symbols-outlined" style={{ fontSize: '13px' }}>download</span> Exportar CSV</span>
+                <span className="flex items-center gap-1"><span className="material-symbols-outlined" style={{ fontSize: '13px' }}>lock</span> Solo personal autorizado</span>
+              </div>
+            </div>
+            </ScrollReveal>
+
+            {/* KYC */}
+            <ScrollReveal delay={200} direction="right">
+            <div className="rounded-2xl p-6 flex flex-col gap-4"
+              style={{ background: 'linear-gradient(135deg, rgba(59,130,246,0.10) 0%, rgba(59,130,246,0.03) 100%)', border: '1px solid rgba(59,130,246,0.25)' }}>
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"
+                  style={{ background: 'rgba(59,130,246,0.18)', border: '1px solid rgba(59,130,246,0.35)' }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: '26px', color: '#93C5FD', fontVariationSettings: "'FILL' 1" }}>badge</span>
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
+                    <h3 className="text-lg font-bold" style={{ fontFamily: "'Manrope', sans-serif", color: '#F0F4FF' }}>Verificación KYC de personal</h3>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase"
+                      style={{ background: 'rgba(59,130,246,0.18)', color: '#93C5FD', border: '1px solid rgba(59,130,246,0.35)' }}>Nuevo</span>
+                  </div>
+                  <p className="text-sm leading-relaxed" style={{ color: '#94A3B8' }}>
+                    El personal de campo (rescatistas, médicos, ingenieros) ahora sube una foto de su cédula durante el registro. Los coordinadores pueden verificar visualmente la identidad antes de aprobar el acceso a datos sensibles.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 text-xs" style={{ color: '#64748B' }}>
+                <span className="flex items-center gap-1"><span className="material-symbols-outlined" style={{ fontSize: '13px' }}>photo_camera</span> Foto de cédula</span>
+                <span className="flex items-center gap-1"><span className="material-symbols-outlined" style={{ fontSize: '13px' }}>verified_user</span> Revisión visual por admin</span>
+                <span className="flex items-center gap-1"><span className="material-symbols-outlined" style={{ fontSize: '13px' }}>lock</span> Almacenamiento privado</span>
+              </div>
+            </div>
+            </ScrollReveal>
+
+          </div>
+        </section>
+
         {/* ── Cómo funciona ── */}
         <section className="mb-24" style={{ borderTop: '1px solid rgba(69,70,77,0.4)', paddingTop: '5rem' }}>
           <div className="text-center mb-12">
