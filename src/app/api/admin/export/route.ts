@@ -16,6 +16,7 @@ function escapeCsv(val: unknown): string {
 }
 
 export async function GET(req: Request) {
+  const statusFilter = new URL(req.url).searchParams.get('status')
   const cookieStore = await cookies()
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -29,7 +30,7 @@ export async function GET(req: Request) {
   const { data: profile } = await admin.from('profiles').select('role').eq('id', user.id).single()
   if (profile?.role !== 'admin') return NextResponse.json({ error: 'Solo administradores' }, { status: 403 })
 
-  const { data: victims } = await admin
+  let query = admin
     .from('victims')
     .select(`
       id, name, physical_description, estimated_age, is_minor, status,
@@ -37,6 +38,10 @@ export async function GET(req: Request) {
       current_location:locations(name)
     `)
     .order('created_at', { ascending: false })
+
+  if (statusFilter) query = query.eq('status', statusFilter)
+
+  const { data: victims } = await query
 
   const headers = [
     'ID', 'Nombre', 'Descripción física', 'Edad estimada', 'Es menor',
@@ -66,11 +71,12 @@ export async function GET(req: Request) {
 
   const csv = [headers.join(','), ...rows].join('\r\n')
   const fecha = new Date().toISOString().slice(0, 10)
+  const suffix = statusFilter ? `-${statusFilter}` : ''
 
   return new NextResponse(csv, {
     headers: {
       'Content-Type': 'text/csv; charset=utf-8',
-      'Content-Disposition': `attachment; filename="rescatevz-victimas-${fecha}.csv"`,
+      'Content-Disposition': `attachment; filename="rescatevz-victimas${suffix}-${fecha}.csv"`,
     },
   })
 }

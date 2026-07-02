@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
+import type { Sismo } from '@/lib/usgs'
 
 // ─── tipos ────────────────────────────────────────────────────────────────────
 
@@ -215,6 +216,40 @@ export default function SincronizacionPage() {
       setSitiosError(e instanceof Error ? e.message : String(e))
     } finally {
       setSitiosLoading(false)
+    }
+  }
+
+  // — Sismos —
+  const [sismos, setSismos] = useState<Sismo[]>([])
+  const [sismosLoading, setSismosLoading] = useState(false)
+  const [sismosError, setSismosError] = useState<string | null>(null)
+  const [sismosResult, setSismosResult] = useState<{ sent: number; alreadyNotified?: boolean } | null>(null)
+
+  useEffect(() => {
+    fetch('/api/sismos').then(r => r.json()).then(d => setSismos(d.sismos || [])).catch(() => {})
+  }, [])
+
+  async function notificarSismo() {
+    if (!sismos[0]) return
+    setSismosLoading(true); setSismosError(null); setSismosResult(null)
+    try {
+      const res = await fetch('/api/sismos/notificar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          usgsId: sismos[0].usgsId,
+          magnitude: sismos[0].magnitude,
+          place: sismos[0].place,
+          occurredAt: sismos[0].occurredAt,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || `Error ${res.status}`)
+      setSismosResult(data)
+    } catch (e: unknown) {
+      setSismosError(e instanceof Error ? e.message : String(e))
+    } finally {
+      setSismosLoading(false)
     }
   }
 
@@ -515,6 +550,50 @@ export default function SincronizacionPage() {
             <p className="text-sm flex-1" style={{ color: sitiosResult.inserted > 0 ? '#22C55E' : '#94A3B8' }}>
               {sitiosResult.message}
             </p>
+          </div>
+        )}
+      </div>
+
+      {/* ══ ALERTAS SÍSMICAS ══ */}
+      <div className="rounded-lg p-5 mb-6" style={{ background: '#1e2d4a', border: '1px solid rgba(36,51,86,0.5)' }}>
+        <div className="flex items-start gap-4">
+          <div className="flex-1">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="material-symbols-outlined" style={{ color: '#DC2626', fontSize: '18px', fontVariationSettings: "'FILL' 1" }}>sensors</span>
+              <h2 className="font-semibold" style={{ color: '#F0F4FF' }}>Alertas sísmicas</h2>
+            </div>
+            {sismos[0] ? (
+              <p className="text-sm" style={{ color: '#94A3B8' }}>
+                Último detectado: <strong style={{ color: '#F0F4FF' }}>M{sismos[0].magnitude.toFixed(1)}</strong> — {sismos[0].place}
+              </p>
+            ) : (
+              <p className="text-sm" style={{ color: '#94A3B8' }}>Cargando actividad sísmica…</p>
+            )}
+          </div>
+          <button
+            onClick={notificarSismo}
+            disabled={sismosLoading || !sismos[0]}
+            className="shrink-0 px-4 py-2 rounded-lg text-sm font-bold transition-all hover:brightness-110 disabled:opacity-50 flex items-center gap-2"
+            style={{ background: '#DC2626', color: '#fff' }}>
+            <span className="material-symbols-outlined" style={{ fontSize: '16px', fontVariationSettings: "'FILL' 1" }}>send</span>
+            {sismosLoading ? 'Enviando…' : 'Notificar sismo'}
+          </button>
+        </div>
+        {sismosError && (
+          <div className="mt-3 text-sm px-3 py-2 rounded-lg"
+            style={{ background: 'rgba(220,38,38,0.10)', border: '1px solid rgba(220,38,38,0.3)', color: '#FCA5A5' }}>
+            {sismosError}
+          </div>
+        )}
+        {sismosResult && (
+          <div className="mt-3 text-sm flex items-center gap-2"
+            style={{ color: sismosResult.alreadyNotified ? '#D4A017' : '#86EFAC' }}>
+            <span className="material-symbols-outlined" style={{ fontSize: '16px', fontVariationSettings: "'FILL' 1" }}>
+              {sismosResult.alreadyNotified ? 'info' : 'check_circle'}
+            </span>
+            {sismosResult.alreadyNotified
+              ? 'Este sismo ya había sido notificado.'
+              : `Notificación enviada a ${sismosResult.sent} suscriptor${sismosResult.sent !== 1 ? 'es' : ''}.`}
           </div>
         )}
       </div>

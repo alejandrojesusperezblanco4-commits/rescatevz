@@ -560,3 +560,51 @@ CREATE POLICY "news: escribir (admin)"
 CREATE OR REPLACE TRIGGER news_posts_updated_at
   BEFORE UPDATE ON public.news_posts
   FOR EACH ROW EXECUTE FUNCTION public.update_updated_at();
+
+
+-- ============================================================
+-- Sismos log (evita notificar el mismo sismo dos veces)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.sismos_log (
+  usgs_id     TEXT PRIMARY KEY,
+  magnitude   FLOAT NOT NULL,
+  place       TEXT NOT NULL,
+  occurred_at TIMESTAMPTZ NOT NULL,
+  notified_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+ALTER TABLE public.sismos_log ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "sismos_log: admin" ON public.sismos_log;
+CREATE POLICY "sismos_log: admin"
+  ON public.sismos_log FOR ALL
+  USING (public.is_admin())
+  WITH CHECK (public.is_admin());
+
+
+-- ============================================================
+-- App settings (configuración global clave-valor)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.app_settings (
+  key        TEXT PRIMARY KEY,
+  value      TEXT NOT NULL,
+  updated_by UUID REFERENCES public.profiles(id),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+ALTER TABLE public.app_settings ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "app_settings: lectura pública" ON public.app_settings;
+CREATE POLICY "app_settings: lectura pública"
+  ON public.app_settings FOR SELECT
+  USING (true);
+
+DROP POLICY IF EXISTS "app_settings: admin write" ON public.app_settings;
+CREATE POLICY "app_settings: admin write"
+  ON public.app_settings FOR ALL
+  USING (public.is_admin())
+  WITH CHECK (public.is_admin());
+
+-- Seed inicial
+INSERT INTO public.app_settings (key, value) VALUES ('epidemic_risk_level', 'alto')
+ON CONFLICT (key) DO NOTHING;

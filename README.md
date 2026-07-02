@@ -22,7 +22,10 @@ Es una aplicación web gratuita que permite a rescatistas registrar a cada perso
 - **Buscar** a un familiar por nombre, descripción física o ubicación en `/buscar`
 - **Ver el mapa** de hospitales y refugios activos con capacidad en tiempo real en `/mapa-publico`
 - **Consultar guías de primeros auxilios** offline (RCP, hemorragias, fracturas, shock, quemaduras...) en `/primeros-auxilios`
+- **Ver qué necesitan los centros** de acopio y refugios en `/donaciones`
+- **Compartir la búsqueda** en WhatsApp o Instagram con una card generada automáticamente
 - **Hablar con el agente de IA** mediante el chat flotante que aparece en todas las páginas
+- **Suscribirse a notificaciones push** — el móvil avisa si aparece la persona que buscas
 
 ### Familiar (cuenta gratuita, acceso inmediato)
 Todo lo anterior más:
@@ -34,9 +37,9 @@ Todo lo anterior más:
 ### Rescatista (requiere aprobación de admin)
 Todo lo anterior más:
 - **Registrar víctimas** desde campo con fotos, descripción física, estado, ubicación, si es menor de edad
+- **Importar listas de papel** con IA — fotografía una lista manuscrita y extrae automáticamente a todas las personas
 - Reportar edificios para inspección de ingenieros
 - Acceder a la lista completa de víctimas registradas con filtros
-- Usar el **agente de IA por SMS** para registrar por texto sin necesidad de abrir la app
 
 ### Personal médico (requiere aprobación de admin)
 Todo lo anterior más:
@@ -53,15 +56,39 @@ Todo lo anterior más:
 Control total:
 - Aprobar o rechazar cuentas de rescatistas, médicos e ingenieros
 - Aprobar o rechazar solicitudes de acceso familiar
-- Gestionar hospitales y refugios (añadir, editar, activar)
+- Gestionar hospitales y refugios (añadir, editar, activar) y **publicar sus necesidades de donaciones**
 - Ver panel de reportes de menores
-- Sincronizar víctimas contra Venezuela Reporta (46.000+ registros nacionales)
+- Sincronizar víctimas contra Venezuela Reporta y otras plataformas nacionales
+- **Importar listas de campo masivamente** desde fotos con visión IA
+- **Exportar CSV** con toda la base de datos
+- Ver **analytics** — evolución de registros, distribución por estado, zonas calientes
 - Exportar datos en formato PFIF (estándar internacional Google Person Finder)
-- Importar listas hospitalarias en CSV masivo
+- Publicar noticias y alertas en el tablón público
 
 ---
 
 ## Funcionalidades principales
+
+### Lector de documentos de campo con IA
+Los rescatistas fotografían listas manuscritas o impresas — formularios de hospital, censos de refugio, partes de rescate. La IA extrae nombre, cédula, edad, estado y ubicación de cada persona automáticamente. El operador revisa y confirma antes de ingresar. Soporta múltiples fotos en lote, procesadas una a una para no saturar el sistema.
+
+### Compartir para búsqueda en redes sociales
+Cada perfil de víctima genera una card de 1200×630px con la descripción física, estado de salud y ubicación. Al compartir el enlace en Instagram, WhatsApp o Twitter aparece la preview con la imagen — sin nombre ni foto de la víctima por privacidad. Diseño con la bandera venezolana y CTA directo a la búsqueda.
+
+### Muro de donaciones en tiempo real
+Los coordinadores de hospitales, refugios y centros de acopio publican qué necesitan (agua, medicamentos, ropa, generadores…) con nivel de urgencia. Aparece en `/donaciones`, página pública sin login, con teléfono de contacto directo por cada centro.
+
+### Dashboard en tiempo real
+El panel de administración muestra los contadores de víctimas actualizándose en vivo (Supabase Realtime) sin recargar la página. Un punto verde pulsante indica que la conexión está activa. El tab de "Solicitudes" en la barra móvil muestra un badge rojo con el número de solicitudes pendientes.
+
+### Analytics para coordinadores
+Panel con gráficos SVG de: registros por día (últimos 14 días), solicitudes familiares por día, distribución por estado (con vida / crítico / fallecido / sin confirmar) y top 6 zonas de hallazgo. Datos en tiempo real desde la base de datos.
+
+### Export CSV
+Descarga toda la base de datos en un archivo CSV con todos los campos excepto fotos. Los menores aparecen como `[MENOR — datos protegidos]`. Disponible para administradores desde el dashboard de herramientas o desde la página de Analytics.
+
+### Notificaciones push
+Los usuarios que buscan a un familiar pueden suscribirse para recibir notificaciones push en el móvil. Cuando un rescatista registra una nueva persona, el sistema notifica automáticamente a todos los suscriptores. Botón de cancelación disponible en cualquier momento.
 
 ### Registro de víctimas
 El formulario está optimizado para campo: fotos, descripción física, estado de salud, ubicación en hospital o refugio, si es menor de edad. Los menores quedan protegidos — no aparecen en búsquedas públicas, solo los ve el staff verificado y el familiar aprobado.
@@ -72,11 +99,11 @@ Cualquier persona puede buscar sin cuenta. La búsqueda es por nombre o descripc
 ### Acceso familiar verificado
 Para ver fotos, estado médico y datos completos de una víctima, el familiar sube su cédula o acta de nacimiento. Un admin revisa y aprueba. El acceso dura 48 horas y se renueva si se necesita. Al aprobar o rechazar, el familiar recibe un **email automático** desde noreply@rescate-vz.com.
 
-### Perfil de víctima con QR
-Cada víctima tiene una ficha con código QR que se puede imprimir y pegar en la cama del hospital. Cualquier rescatista o familiar con el link o el QR puede acceder al perfil (con los permisos correspondientes). También se puede compartir por WhatsApp y Telegram con un clic.
+### Perfil de víctima con QR y lightbox
+Cada víctima tiene una ficha con código QR que se puede imprimir y pegar en la cama del hospital. Las fotos se pueden ampliar en un lightbox fullscreen con navegación por flechas y cierre con ESC. Se puede compartir por WhatsApp y generar una card para Instagram con un clic.
 
 ### Matching biométrico con IA
-Los rescatistas pueden comparar la foto de una víctima sin identificar contra las últimas víctimas registradas con fotos usando visión artificial (Claude Haiku). No reemplaza la identificación formal pero ayuda a descartar o señalar coincidencias posibles con una nota de confianza alta / media.
+Los rescatistas pueden comparar la foto de una víctima sin identificar contra las últimas víctimas registradas con fotos usando visión artificial. No reemplaza la identificación formal pero ayuda a descartar o señalar coincidencias posibles.
 
 ### Mapa en tiempo real
 Hospitales y refugios activos con capacidad actual, porcentaje de ocupación y teléfono de contacto. Las estructuras evaluadas por ingenieros aparecen con chinchetas de color (verde / amarillo / rojo). Funciona en móvil sin necesidad de instalar nada.
@@ -85,7 +112,7 @@ Hospitales y refugios activos con capacidad actual, porcentaje de ocupación y t
 Ocho protocolos (RCP, hemorragias, shock, aplastamiento, fracturas, quemaduras, inconsciencia, asfixia) disponibles sin conexión una vez cargados. Pueden usarse en campo sin señal.
 
 ### Agente de IA integrado
-Un asistente disponible 24/7 mediante el chat flotante de la web o por SMS. Puede registrar víctimas por texto natural ("encontré a un hombre de unos 50 años inconsciente en el hospital de Caracas"), buscar personas y orientar en primeros auxilios.
+Un asistente disponible 24/7 mediante el chat flotante de la web. Puede buscar personas, orientar en primeros auxilios e informar sobre hospitales activos.
 
 ### Semáforo de habitabilidad de estructuras
 Los ingenieros y arquitectos voluntarios evalúan edificios con un semáforo:
@@ -93,13 +120,11 @@ Los ingenieros y arquitectos voluntarios evalúan edificios con un semáforo:
 - 🟡 **Amarillo** — uso restringido, acceso controlado
 - 🔴 **Rojo** — no habitable, riesgo de colapso
 
-Los rescatistas pueden reportar estructuras sospechosas para que un ingeniero las evalúe. Todo aparece en el mapa.
+### Sincronización con plataformas nacionales
+La plataforma puede sincronizarse con Venezuela Reporta (40.000+ registros) para cruzar víctimas. La sección de colaboradoras en la landing enlaza a Venezuela Te Busca, Desaparecidos Terremoto Venezuela, SOS Venezuela 2026, Terremoto Venezuela y RedQuipu.
 
-### Integración con Venezuela Reporta
-La plataforma puede sincronizarse con Venezuela Reporta (venezolana, 46.000+ registros) para cruzar víctimas y evitar duplicados a escala nacional.
-
-### Exportación PFIF
-Los datos se pueden exportar en formato estándar People Finder Interchange Format, el estándar internacional usado por Google Person Finder y Cruz Roja para intercambio de datos de emergencia.
+### Feed de actividad en tiempo real
+La landing muestra un feed de actividad reciente (anonimizado) — zonas donde se han registrado personas en las últimas horas. Se actualiza cada 45 segundos sin recargar la página.
 
 ---
 
@@ -116,12 +141,17 @@ Los datos se pueden exportar en formato estándar People Finder Interchange Form
 1. Ve a **https://rescate-vz.com/registro**
 2. Crea una cuenta como **Rescatista** o **Personal médico**
 3. Tu cuenta queda en revisión hasta que un administrador la apruebe
-4. Al aprobar, puedes registrar víctimas y actualizar estados
+4. Al aprobar, puedes registrar víctimas, actualizar estados e importar listas de campo
 
 ### Si eres ingeniero o arquitecto
-1. Regístrate como **Ingeniero/Arquitecto** en **/registro**
-2. Al ser aprobado, accedes al panel de estructuras en **/estructuras**
+1. Regístrate como **Ingeniero/Arquitecto** en `/registro`
+2. Al ser aprobado, accedes al panel de estructuras en `/estructuras`
 3. Evalúa edificios reportados o añade nuevos con el semáforo de habitabilidad
+
+### Si coordinas un centro de acopio, hospital o refugio
+1. Contacta al equipo para obtener acceso de administrador
+2. En `/ubicaciones` puedes publicar qué necesita tu centro en `/donaciones`
+3. Las familias y voluntarios verán tus necesidades en tiempo real
 
 ### Si eres administrador de una organización
 Escribe a **alejandrojesusperezblanco4@gmail.com** para coordinar acceso y roles de administrador para tu equipo.
@@ -133,30 +163,36 @@ Escribe a **alejandrojesusperezblanco4@gmail.com** para coordinar acceso y roles
 - Las **fotos de víctimas** nunca son públicas. Solo se sirven mediante enlaces firmados que expiran en 5 minutos
 - Los **menores** son completamente invisibles en búsquedas públicas. La base de datos los oculta a nivel de servidor, no solo en la interfaz
 - El **acceso familiar** expira automáticamente a las 48 horas
-- Toda acción sensible (verificar staff, aprobar acceso, crear víctimas) queda registrada en un **log de auditoría** inmutable
+- Las **cédulas** extraídas por OCR se enmascaran (`****1234`) antes de guardarse
+- Los **documentos de identidad** de familias solo son accesibles por el propietario o un administrador (RLS en storage)
+- Los **headers de seguridad** están activos en todas las rutas: HSTS, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy
+- Toda acción sensible queda registrada en un **log de auditoría** inmutable
 - La base de datos aplica **Row Level Security** — cada usuario solo puede ver y modificar lo que su rol permite, directamente en el motor de base de datos
 
 ---
 
-## Stack técnico (para desarrolladores)
+## Stack técnico
 
 | Capa | Tecnología |
 |---|---|
-| Framework | Next.js 16 — App Router, PWA, SSG para guías offline |
-| Base de datos | Supabase — PostgreSQL + Row Level Security + Auth |
+| Framework | Next.js 16 — App Router, PWA, ISR, Edge runtime para OG images |
+| Base de datos | Supabase — PostgreSQL + Row Level Security + Auth + Realtime + Storage |
 | Estilos | Tailwind CSS v4 |
 | Mapas | Leaflet + OpenStreetMap |
 | Agente IA | OpenRouter → `anthropic/claude-haiku-4.5` (texto + visión) |
+| OG Images | `next/og` — ImageResponse para cards de Instagram |
 | Email | Resend — `noreply@rescate-vz.com` |
-| QR | `qrcode` (generación server-side en azul marino) |
+| Push | Web Push API + VAPID keys |
+| QR | `qrcode` (server-side) |
 | Deploy | Railway (región US West) |
+| DNS | Cloudflare (DNS only) |
 | Lenguaje | TypeScript estricto |
 
 ### Roles en base de datos
 `admin` · `rescuer` · `medical` · `family` · `engineer`
 
 ### Tablas principales
-`profiles` · `victims` · `locations` · `access_requests` · `audit_log` · `minor_inquiries` · `structures`
+`profiles` · `victims` · `locations` · `access_requests` · `audit_log` · `minor_inquiries` · `structures` · `news_posts` · `push_subscriptions`
 
 ### Variables de entorno requeridas
 ```
@@ -170,16 +206,45 @@ RESEND_FROM_EMAIL
 TWILIO_ACCOUNT_SID
 TWILIO_AUTH_TOKEN
 NEXT_PUBLIC_TWILIO_WHATSAPP_NUMBER
+NEXT_PUBLIC_VAPID_PUBLIC_KEY
+VAPID_PRIVATE_KEY
+VAPID_SUBJECT
 ```
+
+---
+
+## Rutas principales
+
+| Ruta | Acceso | Descripción |
+|---|---|---|
+| `/` | Público | Landing con stats en vivo, feed de actividad, features, colaboradoras |
+| `/buscar` | Público | Búsqueda de familiares + push notifications + compartir |
+| `/mapa-publico` | Público | Mapa con hospitales, refugios y estructuras |
+| `/donaciones` | Público | Qué necesitan los centros de acopio |
+| `/compartir/[id]` | Público | Card para compartir en redes sociales |
+| `/noticias` | Público | Tablón de noticias del coordinador |
+| `/primeros-auxilios` | Público | 8 guías offline |
+| `/dashboard` | Autenticado | Panel principal con Realtime |
+| `/victimas` | Staff | Lista con filtros |
+| `/victimas/nueva` | Staff verificado | Registro de víctima |
+| `/victima/[id]` | Staff + familiar aprobado | Perfil completo + lightbox |
+| `/estructuras` | Staff | Semáforo de habitabilidad |
+| `/sincronizacion` | Admin | Lector de documentos + sync Venezuela Reporta |
+| `/ubicaciones` | Admin | Gestión de centros + publicar donaciones |
+| `/admin/analytics` | Admin | Gráficos y estadísticas |
+| `/admin/noticias` | Admin | Publicar noticias |
+| `/solicitudes` | Admin | Solicitudes de acceso familiar |
+| `/verificacion` | Admin | Aprobar staff |
+| `/menores` | Admin | Reportes de menores |
 
 ---
 
 ## Equipo
 
-Desarrollado en 72 horas como respuesta de emergencia al terremoto de Venezuela del 24 de junio de 2026.
+Desarrollado en respuesta de emergencia al terremoto de Venezuela del 24 de junio de 2026.
 
 **Alejandro** — Arquitectura, backend, Supabase, deploy, coordinación  
-**Amir** — Frontend, seguridad, roles, evaluación de estructuras
+**Amir** — Frontend, seguridad, roles, evaluación de estructuras, segundo administrador
 
 ---
 

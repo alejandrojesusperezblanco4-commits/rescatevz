@@ -11,6 +11,7 @@ interface StaffProfile {
   full_name: string
   role: 'rescuer' | 'medical' | 'engineer'
   cedula: string | null
+  cedula_photo_url: string | null
   created_at: string
   is_verified: boolean
 }
@@ -31,6 +32,19 @@ export default function VerificacionPanel({ pendientes, verificados, adminId }: 
   const router = useRouter()
   const [processing, setProcessing] = useState<string | null>(null)
   const [tab, setTab] = useState<'pendientes' | 'verificados'>('pendientes')
+  const [cedulaUrl, setCedulaUrl] = useState<string | null>(null)
+  const [cedulaLoading, setCedulaLoading] = useState<string | null>(null)
+
+  async function verCedula(userId: string) {
+    setCedulaLoading(userId)
+    try {
+      const res = await fetch(`/api/admin/kyc-doc?userId=${userId}`)
+      const data = await res.json()
+      if (data.url) setCedulaUrl(data.url)
+    } finally {
+      setCedulaLoading(null)
+    }
+  }
 
   async function aprobar(userId: string) {
     setProcessing(userId)
@@ -72,6 +86,25 @@ export default function VerificacionPanel({ pendientes, verificados, adminId }: 
 
   return (
     <div>
+      {/* Modal foto cédula */}
+      {cedulaUrl && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,0.85)' }}
+          onClick={() => setCedulaUrl(null)}>
+          <div className="relative max-w-lg w-full" onClick={e => e.stopPropagation()}>
+            <button
+              onClick={() => setCedulaUrl(null)}
+              className="absolute -top-10 right-0 text-white flex items-center gap-1 text-sm opacity-70 hover:opacity-100">
+              <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>close</span>
+              Cerrar
+            </button>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={cedulaUrl} alt="Foto de cédula" className="w-full rounded-xl" />
+          </div>
+        </div>
+      )}
+
       {/* Tabs */}
       <div className="flex gap-2 mb-6">
         <button
@@ -129,13 +162,30 @@ export default function VerificacionPanel({ pendientes, verificados, adminId }: 
                   )}
                 </div>
                 <p className="text-sm text-gray-500 truncate">{p.email}</p>
-                <div className="flex items-center gap-4 mt-1">
+                <div className="flex items-center gap-4 mt-1 flex-wrap">
                   <p className="text-xs text-gray-400">
                     CI: <span className="font-medium text-gray-600">{p.cedula || 'No registrada'}</span>
                   </p>
                   <p className="text-xs text-gray-400">
                     Registrado: {formatDate(p.created_at)}
                   </p>
+                  {p.cedula_photo_url ? (
+                    <button
+                      onClick={() => verCedula(p.id)}
+                      disabled={cedulaLoading === p.id}
+                      className="text-xs flex items-center gap-1 px-2 py-1 rounded-lg transition-all hover:brightness-110 disabled:opacity-50"
+                      style={{ background: 'rgba(59,130,246,0.10)', color: '#3B82F6', border: '1px solid rgba(59,130,246,0.3)' }}>
+                      <span className="material-symbols-outlined" style={{ fontSize: '13px', fontVariationSettings: "'FILL' 1" }}>
+                        {cedulaLoading === p.id ? 'progress_activity' : 'badge'}
+                      </span>
+                      {cedulaLoading === p.id ? 'Cargando…' : 'Ver cédula'}
+                    </button>
+                  ) : (
+                    <span className="text-xs px-2 py-0.5 rounded-full"
+                      style={{ background: 'rgba(212,160,23,0.10)', color: '#D4A017', border: '1px solid rgba(212,160,23,0.3)' }}>
+                      Sin foto de cédula
+                    </span>
+                  )}
                 </div>
               </div>
 

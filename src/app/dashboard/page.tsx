@@ -112,6 +112,8 @@ export default async function DashboardPage() {
                 { href: '/ubicaciones', icon: 'add_location', label: 'Ubicaciones', desc: 'Hospitales y refugios', color: '#22C55E' },
                 { href: '/menores', icon: 'child_care', label: 'Menores', desc: 'Reportes de niños', color: '#A855F7' },
                 { href: '/admin/analytics', icon: 'bar_chart', label: 'Analytics', desc: 'Evolución de la emergencia', color: '#F97316' },
+                { href: '/admin/fallecidos', icon: 'sentiment_sad', label: 'Fallecidos', desc: 'Registro y estadísticas', color: '#64748B' },
+                { href: '/admin/salud', icon: 'health_and_safety', label: 'Salud pública', desc: 'Riesgo epidémico', color: '#EF4444' },
                 { href: '/api/admin/export', icon: 'download', label: 'Exportar CSV', desc: 'Base de datos completa', color: '#06B6D4' },
               ].map(tool => (
                 <Link key={tool.href} href={tool.href}

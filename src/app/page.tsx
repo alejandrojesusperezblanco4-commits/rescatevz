@@ -41,6 +41,7 @@ export default async function LandingPage() {
     { count: minors },
     { count: familiasReunidas },
     { data: latestNews },
+    { count: deceased },
   ] = await Promise.all([
     admin ? admin.from('victims').select('*', { count: 'exact', head: true }) : zeroCount,
     admin ? admin.from('victims').select('*', { count: 'exact', head: true }).eq('status', 'alive') : zeroCount,
@@ -48,6 +49,7 @@ export default async function LandingPage() {
     admin ? admin.from('victims').select('*', { count: 'exact', head: true }).eq('is_minor', true) : zeroCount,
     admin ? admin.from('access_requests').select('*', { count: 'exact', head: true }).eq('status', 'approved') : zeroCount,
     supabase.from('news_posts').select('id, title, category, published_at').eq('is_published', true).order('published_at', { ascending: false }).limit(3),
+    admin ? admin.from('victims').select('*', { count: 'exact', head: true }).eq('status', 'deceased') : zeroCount,
   ])
 
   const stats = [
@@ -82,7 +84,7 @@ export default async function LandingPage() {
               </span>
             </div>
             <div className="hidden md:flex gap-6">
-              {[['Noticias', '/noticias'], ['Donaciones', '/donaciones'], ['Guía', '/guia'], ['Primeros auxilios', '/primeros-auxilios']].map(([label, href]) => (
+              {[['Noticias', '/noticias'], ['Salud', '/salud'], ['Sismos', '/sismos'], ['Donaciones', '/donaciones'], ['Primeros auxilios', '/primeros-auxilios']].map(([label, href]) => (
                 <Link key={label} href={href} className="font-medium transition-colors hover:text-yellow-400" style={{ color: '#c5c6ce' }}>
                   {label}
                 </Link>
@@ -182,6 +184,11 @@ export default async function LandingPage() {
               <span>
                 <span className="material-symbols-outlined" style={{ fontSize: '14px', verticalAlign: 'middle', color: '#D4A017', fontVariationSettings: "'FILL' 1" }}>family_restroom</span>
                 {' '}<span style={{ color: '#D4A017', fontWeight: 600 }}>{familiasReunidas.toLocaleString('es-VE')}</span> familias ya encontraron respuesta
+              </span>
+            )}
+            {deceased !== null && deceased > 0 && (
+              <span style={{ color: '#475569' }}>
+                <span style={{ fontWeight: 600 }}>{deceased.toLocaleString('es-VE')}</span> fallecidos registrados
               </span>
             )}
           </div>

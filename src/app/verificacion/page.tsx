@@ -19,14 +19,14 @@ export default async function VerificacionPage() {
 
   const { data: pendientes } = await supabase
     .from('profiles')
-    .select('id, email, full_name, role, cedula, created_at, is_verified')
+    .select('id, email, full_name, role, cedula, cedula_photo_url, created_at, is_verified')
     .in('role', ['rescuer', 'medical', 'engineer'])
     .eq('is_verified', false)
     .order('created_at', { ascending: true })
 
   const { data: verificados } = await supabase
     .from('profiles')
-    .select('id, email, full_name, role, cedula, created_at, is_verified')
+    .select('id, email, full_name, role, cedula, cedula_photo_url, created_at, is_verified')
     .in('role', ['rescuer', 'medical', 'engineer'])
     .eq('is_verified', true)
     .order('created_at', { ascending: false })

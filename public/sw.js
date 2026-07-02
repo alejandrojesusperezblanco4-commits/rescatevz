@@ -112,13 +112,15 @@ self.addEventListener('push', event => {
   let payload
   try { payload = event.data.json() } catch { return }
 
+  const isSismo = payload.type === 'sismo'
+
   event.waitUntil(
     self.registration.showNotification(payload.title || 'RescateVZ', {
       body: payload.body || '',
       icon: payload.icon || '/favicon.svg',
       badge: payload.badge || '/favicon.svg',
       data: { url: payload.url || '/' },
-      vibrate: [200, 100, 200],
+      vibrate: isSismo ? [300, 100, 300, 100, 300] : [200, 100, 200],
     })
   )
 })
