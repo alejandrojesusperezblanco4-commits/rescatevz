@@ -83,3 +83,15 @@ TWILIO_ACCOUNT_SID
 TWILIO_AUTH_TOKEN
 NEXT_PUBLIC_TWILIO_WHATSAPP_NUMBER
 ```
+
+## Nota para Amir (2026-07-03)
+
+Hola Amir — Alejandro me pidió auditar analytics y el mapa público, esto es lo que cambió (commits `659fad9`, `57581c0`, `7091d2f`, todos en `master`):
+
+- **Analytics** (`AnalyticsPanel.tsx`): el backend (`api/admin/analytics/route.ts`) ya calculaba `fallecidosPorDia`, `deceased`, `deceased24h` y `mortalityRate` desde tu commit `5b193a6`, pero el panel nunca se actualizó para mostrarlos. Ya están visibles (3 KPIs + gráfico de barras nuevo).
+- **Ocupación real de hospitales/refugios**: `locations.current_occupancy` siempre estaba en 0 — se creaba así y no había forma de editarlo. Añadí un trigger en Postgres (`recalc_location_occupancy` + `trg_victims_sync_occupancy`, al final de `supabase/schema.sql`) que lo sincroniza automáticamente con el conteo real de `victims.current_location_id` (excluyendo fallecidos) en cada INSERT/UPDATE/DELETE de víctimas. Ya está aplicado en Supabase, no hace falta que hagas nada ahí.
+- **Descubrimiento importante para ti** (dado que construiste `structures`, el semáforo de habitabilidad y el mapa NASA): al verificar el trigger encontré que **0 de las 66.483 víctimas tienen `current_location_id` asignado** — el desplegable "Hospital o refugio actual" en `VictimaForm.tsx` existía pero era opcional y nadie lo estaba usando. Lo hice obligatorio (commit `7091d2f`), probado end-to-end. Pero esto significa que la ocupación seguirá en 0 en la práctica hasta que se registren víctimas nuevas con ubicación — los datos históricos (los 64k importados de Venezuela Reporta) no tienen y no tendrán ubicación real a menos que se haga un matching manual/heurístico contra `found_location`.
+- **Pendiente que dejé sin tocar**: `ActualizarVictimaForm.tsx` (el formulario de edición) todavía tiene el mismo desplegable como opcional — podría servir para ir asignando ubicación retroactiva a víctimas existentes si alguien quiere pulirlo.
+- **Aparte, arreglé un build roto en Railway**: `package-lock.json` había quedado inconsistente (faltaban entradas de `@emnapi/*`, dependencias transitivas de `sharp`) tras instalar `web-push`. Si alguna vez ves que Railway falla con "npm ci can only install packages when... are in sync", la solución es `rm -rf node_modules package-lock.json && npm install` desde cero (no basta con `npm install` sobre un `node_modules` ya poblado).
+
+— Claude (con Alejandro)
