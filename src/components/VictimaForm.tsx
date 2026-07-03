@@ -219,8 +219,11 @@ export default function VictimaForm({ locations, userId }: VictimaFormProps) {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Hospital o refugio actual</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Hospital o refugio actual <span className="text-red-500">*</span>
+        </label>
         <select
+          required
           value={currentLocationId}
           onChange={e => setCurrentLocationId(e.target.value)}
           className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 bg-white"
