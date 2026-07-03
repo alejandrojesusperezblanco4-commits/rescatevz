@@ -608,3 +608,53 @@ CREATE POLICY "app_settings: admin write"
 -- Seed inicial
 INSERT INTO public.app_settings (key, value) VALUES ('epidemic_risk_level', 'alto')
 ON CONFLICT (key) DO NOTHING;
+
+
+-- ============================================================
+-- Ocupación de locations sincronizada con víctimas reales
+-- (current_occupancy dejó de reflejar la realidad: se creaba
+-- en 0 y no había ningún formulario para editarlo a mano)
+-- ============================================================
+CREATE OR REPLACE FUNCTION public.recalc_location_occupancy(loc_id UUID)
+RETURNS VOID AS $$
+BEGIN
+  IF loc_id IS NULL THEN RETURN; END IF;
+  UPDATE public.locations
+  SET current_occupancy = (
+    SELECT COUNT(*) FROM public.victims
+    WHERE current_location_id = loc_id AND status <> 'deceased'
+  )
+  WHERE id = loc_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION public.trg_victims_sync_occupancy()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF TG_OP = 'DELETE' THEN
+    PERFORM public.recalc_location_occupancy(OLD.current_location_id);
+    RETURN OLD;
+  ELSIF TG_OP = 'INSERT' THEN
+    PERFORM public.recalc_location_occupancy(NEW.current_location_id);
+  ELSIF TG_OP = 'UPDATE' AND (
+    OLD.current_location_id IS DISTINCT FROM NEW.current_location_id
+    OR OLD.status IS DISTINCT FROM NEW.status
+  ) THEN
+    PERFORM public.recalc_location_occupancy(OLD.current_location_id);
+    PERFORM public.recalc_location_occupancy(NEW.current_location_id);
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS victims_sync_occupancy ON public.victims;
+CREATE TRIGGER victims_sync_occupancy
+  AFTER INSERT OR UPDATE OR DELETE ON public.victims
+  FOR EACH ROW EXECUTE FUNCTION public.trg_victims_sync_occupancy();
+
+-- Backfill: recalcula la ocupación de todas las locations con los datos ya existentes
+UPDATE public.locations l
+SET current_occupancy = (
+  SELECT COUNT(*) FROM public.victims v
+  WHERE v.current_location_id = l.id AND v.status <> 'deceased'
+);

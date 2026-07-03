@@ -6,9 +6,17 @@ interface DayPoint { date: string; count: number }
 interface Analytics {
   registrosPorDia: DayPoint[]
   solicitudesPorDia: DayPoint[]
+  fallecidosPorDia: DayPoint[]
   statusDistribution: Record<string, number>
   topLocations: { name: string; count: number }[]
-  totals: { victims: number; requests: number; approved: number }
+  totals: {
+    victims: number
+    requests: number
+    approved: number
+    deceased: number
+    deceased24h: number
+    mortalityRate: number
+  }
 }
 
 const STATUS_CFG: Record<string, { label: string; color: string }> = {
@@ -93,13 +101,33 @@ export default function AnalyticsPanel() {
         ))}
       </div>
 
+      {/* Fallecidos — KPIs críticos */}
+      <div className="grid grid-cols-3 gap-4">
+        {[
+          { label: 'Fallecidos', value: data.totals.deceased, icon: 'personal_injury', color: '#94A3B8' },
+          { label: 'Fallecidos 24h', value: data.totals.deceased24h, icon: 'schedule', color: '#DC2626' },
+          { label: 'Tasa mortalidad', value: data.totals.mortalityRate, suffix: '%', icon: 'monitor_heart', color: '#DC2626' },
+        ].map(k => (
+          <div key={k.label} className="rounded-2xl p-4" style={{ background: '#1e2d4a', border: '1px solid rgba(36,51,86,0.5)', borderLeft: `3px solid ${k.color}` }}>
+            <span className="material-symbols-outlined mb-2 block" style={{ fontSize: '20px', color: k.color, fontVariationSettings: "'FILL' 1" }}>{k.icon}</span>
+            <p className="text-2xl font-black tabular-nums" style={{ color: k.color, fontFamily: 'Manrope, sans-serif' }}>
+              {k.value.toLocaleString('es-VE')}{k.suffix || ''}
+            </p>
+            <p className="text-xs mt-0.5 uppercase tracking-wide" style={{ color: '#64748B' }}>{k.label}</p>
+          </div>
+        ))}
+      </div>
+
       {/* Gráficos de líneas de tiempo */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <div className="rounded-2xl p-5" style={{ background: '#1e2d4a', border: '1px solid rgba(36,51,86,0.5)' }}>
           <BarChart data={data.registrosPorDia} color="#D4A017" label="Registros por día" />
         </div>
         <div className="rounded-2xl p-5" style={{ background: '#1e2d4a', border: '1px solid rgba(36,51,86,0.5)' }}>
           <BarChart data={data.solicitudesPorDia} color="#3B82F6" label="Solicitudes de familiares por día" />
+        </div>
+        <div className="rounded-2xl p-5" style={{ background: '#1e2d4a', border: '1px solid rgba(36,51,86,0.5)' }}>
+          <BarChart data={data.fallecidosPorDia} color="#94A3B8" label="Fallecidos por día" />
         </div>
       </div>
 
