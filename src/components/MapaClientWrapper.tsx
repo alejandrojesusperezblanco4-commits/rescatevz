@@ -3,7 +3,10 @@
 import dynamic from 'next/dynamic'
 import type { Location, Structure } from '@/lib/types'
 
-const MapaRescate = dynamic(() => import('./MapaRescate'), { ssr: false })
+const MapaRescate = dynamic<{ locations: Location[]; structures?: Structure[] }>(
+  () => import('./MapaRescate'),
+  { ssr: false },
+)
 
 export default function MapaClientWrapper({
   locations,
