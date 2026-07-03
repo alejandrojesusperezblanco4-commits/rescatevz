@@ -32,8 +32,9 @@ export default async function NoticiasPage() {
 
   const { data: posts } = await supabase
     .from('news_posts')
-    .select('id, title, content, category, source_url, created_at, author:profiles(full_name)')
+    .select('id, title, content, category, source_name, source_url, expires_at, created_at, author:profiles(full_name)')
     .eq('is_published', true)
+    .or('expires_at.is.null,expires_at.gt.' + new Date().toISOString())
     .order('created_at', { ascending: false })
     .limit(50)
 
@@ -131,16 +132,24 @@ export default async function NoticiasPage() {
                       <p className="text-sm leading-relaxed whitespace-pre-line" style={{ color: '#94A3B8' }}>
                         {post.content}
                       </p>
-                      {post.source_url && (
-                        <a href={post.source_url} target="_blank" rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-xs mt-3 hover:underline"
-                          style={{ color: '#D4A017' }}>
-                          <span className="material-symbols-outlined" style={{ fontSize: '13px' }}>open_in_new</span>
-                          Ver fuente
-                        </a>
-                      )}
-                      <p className="text-xs mt-3" style={{ color: '#334155' }}>
-                        Publicado por {(post.author as any)?.full_name?.split(' ')[0] || 'Coordinador'}
+                      {/* Fuente — siempre visible */}
+                      <div className="flex items-center gap-2 mt-3 flex-wrap">
+                        <span className="flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full"
+                          style={{ background: 'rgba(212,160,23,0.12)', color: '#D4A017', border: '1px solid rgba(212,160,23,0.25)' }}>
+                          <span className="material-symbols-outlined" style={{ fontSize: '12px' }}>verified</span>
+                          {(post as any).source_name}
+                        </span>
+                        {post.source_url && (
+                          <a href={post.source_url} target="_blank" rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-xs hover:underline"
+                            style={{ color: '#64748B' }}>
+                            <span className="material-symbols-outlined" style={{ fontSize: '13px' }}>open_in_new</span>
+                            Ver nota original
+                          </a>
+                        )}
+                      </div>
+                      <p className="text-xs mt-2" style={{ color: '#334155' }}>
+                        {timeAgo(post.created_at)} · verificado por {(post.author as any)?.full_name?.split(' ')[0] || 'Coordinador'}
                       </p>
                     </div>
                   </div>

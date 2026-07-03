@@ -781,3 +781,21 @@ SET current_occupancy = (
   SELECT COUNT(*) FROM public.victims v
   WHERE v.current_location_id = l.id AND v.status <> 'deceased'
 );
+
+-- ============================================================
+-- MIGRACIÓN: noticias con fuente verificada obligatoria y caducidad 48h
+-- ============================================================
+
+-- Nombre de la fuente (ej. "Efecto Cocuyo", "FUNVISIS"). NOT NULL con DEFAULT
+-- transitorio para no romper filas existentes; el formulario lo exige siempre.
+ALTER TABLE public.news_posts
+  ADD COLUMN IF NOT EXISTS source_name TEXT NOT NULL DEFAULT 'RescateVZ';
+
+-- URL a la nota original — ya existía como nullable; se mantiene así porque
+-- algunas fuentes (ej. comunicados orales de Cruz Roja) no tienen URL pública.
+-- El formulario lo pedirá siempre pero no bloqueará si no hay URL.
+
+-- Caducidad: cuando el admin publica, se fija en NOW() + 48h.
+-- El admin puede "Renovar" para sumar otras 48h. NULL = sin caducidad.
+ALTER TABLE public.news_posts
+  ADD COLUMN IF NOT EXISTS expires_at TIMESTAMPTZ;
