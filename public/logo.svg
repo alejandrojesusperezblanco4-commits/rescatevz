@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 60" width="200" height="60">
+  <!-- Fondo oscuro -->
+  <rect width="200" height="60" rx="8" fill="#1a2744"/>
+
+  <!-- Emblema circular con franjas de la bandera venezolana -->
+  <clipPath id="circle-clip">
+    <circle cx="30" cy="30" r="20"/>
+  </clipPath>
+  <g clip-path="url(#circle-clip)">
+    <rect x="10" y="10" width="40" height="14" fill="#CF0A2C"/>
+    <rect x="10" y="24" width="40" height="12" fill="#002F7F"/>
+    <rect x="10" y="36" width="40" height="14" fill="#FFCC00"/>
+  </g>
+  <circle cx="30" cy="30" r="20" fill="none" stroke="#D4A017" stroke-width="1.5"/>
+
+  <!-- Letras RV sobre el emblema -->
+  <text x="30" y="35" text-anchor="middle" font-family="Manrope, Arial, sans-serif" font-weight="800" font-size="13" fill="white" letter-spacing="-0.5">RV</text>
+
+  <!-- Texto RescateVZ -->
+  <text x="62" y="27" font-family="Manrope, Arial, sans-serif" font-weight="800" font-size="16" fill="#F0F4FF" letter-spacing="-0.3">RescateVZ</text>
+
+  <!-- Subtítulo -->
+  <text x="62" y="42" font-family="Manrope, Arial, sans-serif" font-weight="500" font-size="9" fill="#64748B" letter-spacing="0.8">EMERGENCIA · VENEZUELA 2026</text>
+</svg>

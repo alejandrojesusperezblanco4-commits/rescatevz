@@ -326,7 +326,6 @@ ON CONFLICT DO NOTHING;
 
 -- ============================================================
 -- MIGRACIÓN: edificios derrumbados y estado desaparecido
--- Si ya tienes la base de datos creada, ejecuta solo este bloque
 -- ============================================================
 
 ALTER TABLE public.locations
@@ -370,12 +369,10 @@ ALTER TABLE public.locations ADD COLUMN IF NOT EXISTS needs TEXT[] NOT NULL DEFA
 -- MIGRACIÓN: reportante + seguimiento de estado
 -- ============================================================
 
--- Contacto de quien reporta (en víctima)
 ALTER TABLE public.victims ADD COLUMN IF NOT EXISTS reporter_name  TEXT;
 ALTER TABLE public.victims ADD COLUMN IF NOT EXISTS reporter_email TEXT;
 ALTER TABLE public.victims ADD COLUMN IF NOT EXISTS reporter_phone TEXT;
 
--- Contacto de quien reportó el edificio derrumbado (en locations)
 ALTER TABLE public.locations ADD COLUMN IF NOT EXISTS reporter_email TEXT;
 ALTER TABLE public.locations ADD COLUMN IF NOT EXISTS reporter_phone TEXT;
 
@@ -396,12 +393,10 @@ CREATE POLICY IF NOT EXISTS "status_log: insertar (staff)"
   ON public.victim_status_log FOR INSERT
   WITH CHECK (public.current_user_role() IN ('admin', 'medical', 'rescuer'));
 
--- Lectura pública: solo expone old_status, new_status, created_at (sin PII)
 CREATE POLICY IF NOT EXISTS "status_log: leer (público)"
   ON public.victim_status_log FOR SELECT
   USING (TRUE);
 
--- Trigger que registra automáticamente cada cambio de estado
 CREATE OR REPLACE FUNCTION public.log_victim_status_change()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -413,12 +408,376 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+-- ============================================================
+-- MIGRACIÓN: búsqueda pública sin exponer datos sensibles
+-- ============================================================
+
+-- Búsqueda pública: solo confirma ubicación + estado de salud.
+-- Nunca expone nombre, cédula, descripción física, notas ni fotos.
+-- SECURITY DEFINER + columnas fijas en RETURNS TABLE = el llamante
+-- jamás puede pedir una columna distinta a las cuatro listadas aquí,
+-- a diferencia de exponer la tabla victims directamente vía RLS.
+CREATE OR REPLACE FUNCTION public.search_victims_public(p_query TEXT)
+RETURNS TABLE (
+  victim_id     UUID,
+  location_name TEXT,
+  location_type TEXT,
+  victim_status TEXT
+)
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT
+    v.id,
+    COALESCE(l.name, 'Ubicación no registrada'),
+    COALESCE(l.type, 'unknown'),
+    v.status
+  FROM public.victims v
+  LEFT JOIN public.locations l ON l.id = v.current_location_id
+  WHERE v.is_minor = FALSE
+    AND length(trim(p_query)) >= 3
+    AND (v.name ILIKE '%' || p_query || '%' OR v.physical_description ILIKE '%' || p_query || '%')
+  LIMIT 20;
+$$;
+
+REVOKE ALL ON FUNCTION public.search_victims_public(TEXT) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.search_victims_public(TEXT) TO anon, authenticated;
+
+-- Reportes de menores: nunca se busca por texto libre ni se hace
+-- matching automático. Cualquiera puede reportar; solo admin lee/revisa
+-- y cruza manualmente contra los menores ya registrados.
+CREATE TABLE IF NOT EXISTS public.minor_inquiries (
+  id               UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  reporter_name    TEXT NOT NULL,
+  reporter_contact TEXT NOT NULL,
+  description      TEXT NOT NULL,
+  status           TEXT NOT NULL DEFAULT 'pending'
+                     CHECK (status IN ('pending', 'reviewed')),
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+ALTER TABLE public.minor_inquiries ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "minor_inquiries: insertar" ON public.minor_inquiries;
+CREATE POLICY "minor_inquiries: insertar"
+  ON public.minor_inquiries FOR INSERT
+  WITH CHECK (TRUE);
+
+DROP POLICY IF EXISTS "minor_inquiries: leer (admin)" ON public.minor_inquiries;
+CREATE POLICY "minor_inquiries: leer (admin)"
+  ON public.minor_inquiries FOR SELECT
+  USING (public.is_admin());
+
+DROP POLICY IF EXISTS "minor_inquiries: actualizar (admin)" ON public.minor_inquiries;
+CREATE POLICY "minor_inquiries: actualizar (admin)"
+  ON public.minor_inquiries FOR UPDATE
+  USING (public.is_admin());
+
+-- Tipo de documento de identidad para la solicitud de acceso familiar.
+-- Un menor de ~9 años en Venezuela aún no tiene cédula, por lo que el
+-- familiar prueba el parentesco con el acta de nacimiento del menor.
+ALTER TABLE public.access_requests
+  ADD COLUMN IF NOT EXISTS id_document_type TEXT NOT NULL DEFAULT 'cedula'
+    CHECK (id_document_type IN ('cedula', 'acta_nacimiento'));
+
+-- Un familiar con solicitud aprobada y vigente puede ver el perfil
+-- completo de ESA víctima puntual (no de todas). Esto no afecta las
+-- políticas de staff de arriba: en RLS, varias policies permisivas para
+-- el mismo comando se combinan con OR.
+DROP POLICY IF EXISTS "victims: leer (familiar aprobado)" ON public.victims;
+CREATE POLICY "victims: leer (familiar aprobado)"
+  ON public.victims FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.access_requests ar
+      WHERE ar.victim_id = victims.id
+        AND ar.family_user_id = auth.uid()
+        AND ar.status = 'approved'
+        AND ar.expires_at > NOW()
+    )
+  );
+
+-- ============================================================
+-- MIGRACIÓN: verificación obligatoria en reportes de menores
+-- Ante el aumento de desapariciones de menores y de tráfico, un reporte
+-- anónimo sin ningún rastro es un riesgo: cualquiera podría usarlo para
+-- intentar ubicar a un menor sin dejar forma de verificar quién pregunta.
+-- Por eso el reporte ahora exige sesión iniciada + documento que pruebe
+-- parentesco (reutiliza el bucket privado access-docs, ya solo lo lee
+-- admin). Nada de esto habilita búsqueda ni matching automático: sigue
+-- siendo 100% revisión manual de un admin.
+-- ============================================================
+
+ALTER TABLE public.minor_inquiries
+  ADD COLUMN IF NOT EXISTS reporter_user_id UUID REFERENCES public.profiles(id);
+
+ALTER TABLE public.minor_inquiries
+  ADD COLUMN IF NOT EXISTS id_document_url TEXT;
+
+DROP POLICY IF EXISTS "minor_inquiries: insertar" ON public.minor_inquiries;
+CREATE POLICY "minor_inquiries: insertar"
+  ON public.minor_inquiries FOR INSERT
+  WITH CHECK (
+    auth.uid() IS NOT NULL
+    AND reporter_user_id = auth.uid()
+    AND id_document_url IS NOT NULL
+    AND length(id_document_url) > 0
+  );
+
+-- ============================================================
+-- MIGRACIÓN: rescatistas pueden actualizar sus propias víctimas
+-- Ejecutar en Supabase SQL Editor
+-- ============================================================
+
+DROP POLICY IF EXISTS "victims: actualizar (rescuer propio)" ON public.victims;
+CREATE POLICY "victims: actualizar (rescuer propio)"
+  ON public.victims FOR UPDATE
+  USING (
+    public.is_verified_staff()
+    AND public.current_user_role() = 'rescuer'
+    AND created_by = auth.uid()
+  )
+  WITH CHECK (
+    public.is_verified_staff()
+    AND public.current_user_role() = 'rescuer'
+    AND created_by = auth.uid()
+  );
+
+
+-- rescatistas en campo pueden reportar una estructura ("poner una issue")
+-- que entra como 'pending' hasta que un ingeniero la evalúe. La lectura es
+-- pública (se muestra en el mapa); solo ingenieros/admin asignan el color.
+-- Seguro de re-ejecutar sobre una base ya creada.
+-- ============================================================
+
+-- Añadir 'engineer' al CHECK de roles
+ALTER TABLE public.profiles DROP CONSTRAINT IF EXISTS profiles_role_check;
+ALTER TABLE public.profiles
+  ADD CONSTRAINT profiles_role_check
+  CHECK (role IN ('admin', 'rescuer', 'medical', 'family', 'ngo', 'engineer'));
+
+CREATE TABLE IF NOT EXISTS public.structures (
+  id               UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  name             TEXT NOT NULL,
+  address          TEXT,
+  lat              DECIMAL(10, 7),
+  lng              DECIMAL(10, 7),
+  structure_type   TEXT CHECK (structure_type IN
+                     ('residential', 'school', 'hospital', 'commercial',
+                      'government', 'bridge', 'other')),
+  habitability     TEXT NOT NULL DEFAULT 'pending'
+                     CHECK (habitability IN ('pending', 'green', 'yellow', 'red')),
+  report_notes     TEXT,                          -- lo que reportó quien la dio de alta
+  assessment_notes TEXT,                          -- observaciones del ingeniero
+  reported_by      UUID REFERENCES public.profiles(id),
+  assessed_by      UUID REFERENCES public.profiles(id),
+  assessed_at      TIMESTAMPTZ,
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+ALTER TABLE public.structures ENABLE ROW LEVEL SECURITY;
+
+-- Lectura pública: el estado de habitabilidad es información de interés
+-- público (se muestra en el mapa). No contiene datos personales.
+DROP POLICY IF EXISTS "structures: leer (público)" ON public.structures;
+CREATE POLICY "structures: leer (público)"
+  ON public.structures FOR SELECT
+  USING (TRUE);
+
+-- Crear/reportar: admin e ingenieros verificados crean con cualquier
+-- estado; rescatistas verificados solo pueden añadir estructuras 'pending'
+-- (reportar para que un ingeniero las evalúe).
+DROP POLICY IF EXISTS "structures: crear/reportar" ON public.structures;
+CREATE POLICY "structures: crear/reportar"
+  ON public.structures FOR INSERT
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM public.profiles p
+      WHERE p.id = auth.uid()
+        AND (
+          p.role = 'admin'
+          OR (p.role = 'engineer' AND p.is_verified = TRUE)
+          OR (p.role = 'rescuer' AND p.is_verified = TRUE AND habitability = 'pending')
+        )
+    )
+  );
+
+-- Evaluar (asignar/cambiar el color del semáforo): solo ingenieros
+-- verificados y admin.
+DROP POLICY IF EXISTS "structures: evaluar (ingeniero/admin)" ON public.structures;
+CREATE POLICY "structures: evaluar (ingeniero/admin)"
+  ON public.structures FOR UPDATE
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.profiles p
+      WHERE p.id = auth.uid()
+        AND (p.role = 'admin' OR (p.role = 'engineer' AND p.is_verified = TRUE))
+    )
+  );
+
+DROP POLICY IF EXISTS "structures: borrar (admin)" ON public.structures;
+CREATE POLICY "structures: borrar (admin)"
+  ON public.structures FOR DELETE
+  USING (public.is_admin());
+
+CREATE OR REPLACE TRIGGER structures_updated_at
+  BEFORE UPDATE ON public.structures
+  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at();
+
+-- Datos de ejemplo (solo si la tabla está vacía): mezcla de evaluadas y
+-- pendientes para que el semáforo y el mapa no salgan vacíos.
+INSERT INTO public.structures
+  (name, address, lat, lng, structure_type, habitability, assessment_notes, report_notes, assessed_at)
+SELECT v.* FROM (VALUES
+  ('Edificio Residencial Parque Central', 'Av. Lecuna, Parque Central, Caracas',     10.4945::decimal, -66.9075::decimal, 'residential', 'red',     'Daño estructural severo en columnas del nivel 1. Evacuación total.', NULL::text, NOW()),
+  ('Escuela Básica Andrés Bello',         'Av. Sucre, Catia, Caracas',               10.5096::decimal, -66.9295::decimal, 'school',      'yellow',  'Grietas no estructurales. Acceso restringido a planta baja.',       NULL::text, NOW()),
+  ('Centro Comercial El Recreo',          'Av. Casanova, Sabana Grande, Caracas',    10.4915::decimal, -66.8765::decimal, 'commercial',  'green',   'Inspeccionado. Sin daños estructurales. Apto para uso.',            NULL::text, NOW()),
+  ('Edificio sin identificar — Av. Baralt','Av. Baralt, Caracas',                    10.5050::decimal, -66.9180::decimal, 'residential', 'pending', NULL::text, 'Reportado por rescatista: fachada con grietas visibles.',           NULL::timestamptz),
+  ('Ambulatorio Urbano La Pastora',       'La Pastora, Caracas',                     10.5135::decimal, -66.9210::decimal, 'hospital',    'pending', NULL::text, 'Reportado en campo: requiere inspección de ingeniero.',             NULL::timestamptz)
+) AS v(name, address, lat, lng, structure_type, habitability, assessment_notes, report_notes, assessed_at)
+WHERE NOT EXISTS (SELECT 1 FROM public.structures);
+
+
+-- ============================================================
+-- Tablón de noticias (admin-only write, público read)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.news_posts (
+  id           UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  title        TEXT NOT NULL,
+  content      TEXT NOT NULL,
+  category     TEXT NOT NULL DEFAULT 'general'
+               CHECK (category IN ('ayuda','corredor','recursos','alerta','general')),
+  source_url   TEXT,
+  author_id    UUID REFERENCES public.profiles(id),
+  is_published BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+ALTER TABLE public.news_posts ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "news: leer publicadas (público)" ON public.news_posts;
+CREATE POLICY "news: leer publicadas (público)"
+  ON public.news_posts FOR SELECT
+  USING (is_published = TRUE OR EXISTS (
+    SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin'
+  ));
+
+DROP POLICY IF EXISTS "news: escribir (admin)" ON public.news_posts;
+CREATE POLICY "news: escribir (admin)"
+  ON public.news_posts FOR ALL
+  USING (public.is_admin())
+  WITH CHECK (public.is_admin());
+
+CREATE OR REPLACE TRIGGER news_posts_updated_at
+  BEFORE UPDATE ON public.news_posts
+  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at();
+
+
+-- ============================================================
+-- Sismos log (evita notificar el mismo sismo dos veces)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.sismos_log (
+  usgs_id     TEXT PRIMARY KEY,
+  magnitude   FLOAT NOT NULL,
+  place       TEXT NOT NULL,
+  occurred_at TIMESTAMPTZ NOT NULL,
+  notified_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+ALTER TABLE public.sismos_log ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "sismos_log: admin" ON public.sismos_log;
+CREATE POLICY "sismos_log: admin"
+  ON public.sismos_log FOR ALL
+  USING (public.is_admin())
+  WITH CHECK (public.is_admin());
+
+
+-- ============================================================
+-- App settings (configuración global clave-valor)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.app_settings (
+  key        TEXT PRIMARY KEY,
+  value      TEXT NOT NULL,
+  updated_by UUID REFERENCES public.profiles(id),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+ALTER TABLE public.app_settings ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "app_settings: lectura pública" ON public.app_settings;
+CREATE POLICY "app_settings: lectura pública"
+  ON public.app_settings FOR SELECT
+  USING (true);
+
+DROP POLICY IF EXISTS "app_settings: admin write" ON public.app_settings;
+CREATE POLICY "app_settings: admin write"
+  ON public.app_settings FOR ALL
+  USING (public.is_admin())
+  WITH CHECK (public.is_admin());
+
+-- Seed inicial
+INSERT INTO public.app_settings (key, value) VALUES ('epidemic_risk_level', 'alto')
+ON CONFLICT (key) DO NOTHING;
+
+
+-- ============================================================
+-- Ocupación de locations sincronizada con víctimas reales
+-- (current_occupancy dejó de reflejar la realidad: se creaba
+-- en 0 y no había ningún formulario para editarlo a mano)
+-- ============================================================
+CREATE OR REPLACE FUNCTION public.recalc_location_occupancy(loc_id UUID)
+RETURNS VOID AS $$
+BEGIN
+  IF loc_id IS NULL THEN RETURN; END IF;
+  UPDATE public.locations
+  SET current_occupancy = (
+    SELECT COUNT(*) FROM public.victims
+    WHERE current_location_id = loc_id AND status <> 'deceased'
+  )
+  WHERE id = loc_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION public.trg_victims_sync_occupancy()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF TG_OP = 'DELETE' THEN
+    PERFORM public.recalc_location_occupancy(OLD.current_location_id);
+    RETURN OLD;
+  ELSIF TG_OP = 'INSERT' THEN
+    PERFORM public.recalc_location_occupancy(NEW.current_location_id);
+  ELSIF TG_OP = 'UPDATE' AND (
+    OLD.current_location_id IS DISTINCT FROM NEW.current_location_id
+    OR OLD.status IS DISTINCT FROM NEW.status
+  ) THEN
+    PERFORM public.recalc_location_occupancy(OLD.current_location_id);
+    PERFORM public.recalc_location_occupancy(NEW.current_location_id);
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
 DROP TRIGGER IF EXISTS victim_status_log_trigger ON public.victims;
 CREATE TRIGGER victim_status_log_trigger
   AFTER UPDATE ON public.victims
   FOR EACH ROW EXECUTE FUNCTION public.log_victim_status_change();
 
--- Staff puede actualizar víctimas (rescuer también para actualizar estado en campo)
 CREATE POLICY IF NOT EXISTS "victims: actualizar (staff verificado)"
   ON public.victims FOR UPDATE
   USING (public.is_verified_staff());
+
+DROP TRIGGER IF EXISTS victims_sync_occupancy ON public.victims;
+CREATE TRIGGER victims_sync_occupancy
+  AFTER INSERT OR UPDATE OR DELETE ON public.victims
+  FOR EACH ROW EXECUTE FUNCTION public.trg_victims_sync_occupancy();
+
+UPDATE public.locations l
+SET current_occupancy = (
+  SELECT COUNT(*) FROM public.victims v
+  WHERE v.current_location_id = l.id AND v.status <> 'deceased'
+);

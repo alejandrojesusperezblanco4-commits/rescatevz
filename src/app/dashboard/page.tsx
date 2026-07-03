@@ -2,163 +2,236 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import Header from '@/components/Header'
+import DashboardStats from '@/components/DashboardStats'
 import type { Profile } from '@/lib/types'
-import { STATUS_LABELS, STATUS_COLORS } from '@/lib/types'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-
   if (!user) redirect('/login')
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', user.id)
-    .single()
-
+  const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single()
   if (!profile) redirect('/login')
 
-  // Stats
-  const [victimasResult, solicitudesResult, locationesResult] = await Promise.all([
-    supabase.from('victims').select('id, status, is_minor, created_at').order('created_at', { ascending: false }).limit(10),
+  const [
+    { count: total },
+    { count: alive },
+    { count: critical },
+    { count: deceased },
+    { count: minors },
+    { count: pendingSolicitudes },
+    { count: pendingStaff },
+    { count: pendingStructures },
+    { data: recentVictims },
+    { data: locations },
+  ] = await Promise.all([
+    supabase.from('victims').select('*', { count: 'exact', head: true }),
+    supabase.from('victims').select('*', { count: 'exact', head: true }).eq('status', 'alive'),
+    supabase.from('victims').select('*', { count: 'exact', head: true }).eq('status', 'critical'),
+    supabase.from('victims').select('*', { count: 'exact', head: true }).eq('status', 'deceased'),
+    supabase.from('victims').select('*', { count: 'exact', head: true }).eq('is_minor', true),
     profile.role === 'admin'
-      ? supabase.from('access_requests').select('id').eq('status', 'pending')
-      : Promise.resolve({ data: [] }),
-    supabase.from('locations').select('id, name, type, current_occupancy, capacity').eq('is_active', true).limit(5),
+      ? supabase.from('access_requests').select('*', { count: 'exact', head: true }).eq('status', 'pending')
+      : Promise.resolve({ count: 0 }),
+    profile.role === 'admin'
+      ? supabase.from('profiles').select('*', { count: 'exact', head: true }).in('role', ['rescuer', 'medical', 'engineer']).eq('is_verified', false)
+      : Promise.resolve({ count: 0 }),
+    (profile.role === 'admin' || profile.role === 'engineer')
+      ? supabase.from('structures').select('*', { count: 'exact', head: true }).eq('habitability', 'pending')
+      : Promise.resolve({ count: 0 }),
+    supabase.from('victims').select('id, name, status, is_minor, created_at').order('created_at', { ascending: false }).limit(6),
+    supabase.from('locations').select('id, name, type, current_occupancy, capacity').eq('is_active', true).order('type').limit(6),
   ])
 
-  const victims = victimasResult.data || []
-  const pendingSolicitudes = solicitudesResult.data?.length || 0
-  const locations = locationesResult.data || []
-
-  const stats = {
-    total: victims.length,
-    alive: victims.filter(v => v.status === 'alive').length,
-    critical: victims.filter(v => v.status === 'critical').length,
-    deceased: victims.filter(v => v.status === 'deceased').length,
-    minors: victims.filter(v => v.is_minor).length,
-  }
+  const canRegister = profile.role === 'admin' || (profile.is_verified && ['rescuer', 'medical'].includes(profile.role))
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <div className="bg-red-600 text-white text-center py-1.5 text-xs font-medium">
-        Emergencia activa — Terremotos Venezuela 24 de junio 2026
-      </div>
-      <Header profile={profile as Profile} />
+    <div className="min-h-screen flex flex-col antialiased"
+      style={{ background: '#1a2744', color: '#F0F4FF', fontFamily: "'Manrope', sans-serif" }}>
 
-      <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-8">
+      <div className="text-white text-center py-2 text-xs font-semibold uppercase tracking-widest"
+        style={{ background: '#DC2626' }}>
+        🚨 EMERGENCIA ACTIVA — Terremotos Venezuela · 24 jun 2026
+      </div>
+
+      <Header profile={profile as Profile} pendingCount={(pendingSolicitudes || 0) + (pendingStaff || 0)} />
+
+      <main className="flex-grow px-4 md:px-8 pb-12 pt-6 flex flex-col gap-6 w-full max-w-7xl mx-auto">
+
+        {/* Verificación pendiente */}
         {!profile.is_verified && profile.role !== 'family' && (
-          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 flex gap-3">
-            <span className="text-2xl">⏳</span>
+          <div className="flex items-center gap-3 p-4 rounded-lg"
+            style={{ background: 'rgba(212,160,23,0.10)', border: '1px solid rgba(212,160,23,0.20)' }}>
+            <span className="material-symbols-outlined" style={{ color: '#D4A017' }}>schedule</span>
             <div>
-              <p className="font-medium text-amber-800">Cuenta pendiente de verificación</p>
-              <p className="text-sm text-amber-700 mt-0.5">
+              <p className="text-sm font-semibold" style={{ color: '#D4A017' }}>Cuenta pendiente de verificación</p>
+              <p className="text-xs mt-0.5" style={{ color: '#94A3B8' }}>
                 Un administrador revisará tu solicitud como {profile.role === 'rescuer' ? 'rescatista' : 'personal médico'} pronto.
-                Mientras tanto, puedes buscar víctimas y ver el mapa.
               </p>
             </div>
           </div>
         )}
 
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">Panel de control</h1>
-          {(profile.role === 'admin' || (profile.is_verified && (profile.role === 'rescuer' || profile.role === 'medical'))) && (
-            <Link href="/victimas/nueva" className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
-              + Registrar víctima
-            </Link>
-          )}
-        </div>
+        {/* 3. Stats en tiempo real */}
+        <DashboardStats initial={{ total: total || 0, alive: alive || 0, critical: critical || 0, deceased: deceased || 0, minors: minors || 0 }} />
 
-        {/* Stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
-          <StatCard label="Registradas" value={stats.total} color="blue" />
-          <StatCard label="Con vida" value={stats.alive} color="green" />
-          <StatCard label="Estado crítico" value={stats.critical} color="orange" />
-          <StatCard label="Fallecidos" value={stats.deceased} color="gray" />
-        </div>
-
-        {profile.role === 'admin' && pendingSolicitudes > 0 && (
-          <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <span className="text-xl">🔔</span>
-              <span className="font-medium text-red-800">{pendingSolicitudes} solicitud{pendingSolicitudes > 1 ? 'es' : ''} de acceso pendiente{pendingSolicitudes > 1 ? 's' : ''}</span>
-            </div>
-            <Link href="/solicitudes" className="text-sm bg-red-600 text-white px-3 py-1.5 rounded-lg hover:bg-red-700 transition-colors">
-              Revisar
-            </Link>
+        {/* 4. Alertas admin */}
+        {profile.role === 'admin' && ((pendingSolicitudes || 0) > 0 || (pendingStaff || 0) > 0) && (
+          <div className="flex flex-col sm:flex-row gap-4">
+            {(pendingSolicitudes || 0) > 0 && (
+              <Link href="/solicitudes" className="flex-1 rounded-lg p-3 flex items-center gap-3 text-sm transition-opacity hover:opacity-90"
+                style={{ background: 'rgba(220,38,38,0.10)', border: '1px solid rgba(220,38,38,0.20)', color: '#F0F4FF' }}>
+                <span className="material-symbols-outlined" style={{ color: '#DC2626' }}>notifications</span>
+                <span>
+                  <strong>{pendingSolicitudes} solicitud{(pendingSolicitudes || 0) > 1 ? 'es' : ''} de acceso familiar</strong> pendiente{(pendingSolicitudes || 0) > 1 ? 's' : ''} de revisión.
+                </span>
+              </Link>
+            )}
+            {(pendingStaff || 0) > 0 && (
+              <Link href="/verificacion" className="flex-1 rounded-lg p-3 flex items-center gap-3 text-sm transition-opacity hover:opacity-90"
+                style={{ background: 'rgba(212,160,23,0.10)', border: '1px solid rgba(212,160,23,0.20)', color: '#F0F4FF' }}>
+                <span className="material-symbols-outlined" style={{ color: '#D4A017' }}>person</span>
+                <span>
+                  <strong>{pendingStaff} rescatista{(pendingStaff || 0) > 1 ? 's' : ''}</strong> requieren verificación de acceso.
+                </span>
+              </Link>
+            )}
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Últimas víctimas */}
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-semibold text-gray-900">Últimos registros</h2>
-              <Link href="/buscar" className="text-sm text-red-600 hover:underline">Ver todos</Link>
-            </div>
-            {victims.length === 0 ? (
-              <p className="text-sm text-gray-400 text-center py-8">No hay registros aún</p>
-            ) : (
-              <div className="space-y-3">
-                {victims.slice(0, 6).map(v => (
-                  <div key={v.id} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
-                    <div className="flex items-center gap-2">
-                      {v.is_minor && <span className="text-xs bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded font-medium">Menor</span>}
-                      <span className="text-sm text-gray-700">#{v.id.slice(0, 8)}</span>
-                    </div>
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[v.status as keyof typeof STATUS_COLORS]}`}>
-                      {STATUS_LABELS[v.status as keyof typeof STATUS_LABELS]}
-                    </span>
+        {/* 5. Herramientas admin */}
+        {profile.role === 'admin' && (
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: '#475569' }}>
+              Herramientas de administración
+            </p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {[
+                { href: '/sincronizacion', icon: 'document_scanner', label: 'Importar listas', desc: 'Fotos de documentos de campo', color: '#D4A017' },
+                { href: '/admin/noticias', icon: 'edit_note', label: 'Noticias', desc: 'Publicar actualizaciones', color: '#3B82F6' },
+                { href: '/ubicaciones', icon: 'add_location', label: 'Ubicaciones', desc: 'Hospitales y refugios', color: '#22C55E' },
+                { href: '/menores', icon: 'child_care', label: 'Menores', desc: 'Reportes de niños', color: '#A855F7' },
+                { href: '/admin/analytics', icon: 'bar_chart', label: 'Analytics', desc: 'Evolución de la emergencia', color: '#F97316' },
+                { href: '/admin/fallecidos', icon: 'sentiment_sad', label: 'Fallecidos', desc: 'Registro y estadísticas', color: '#64748B' },
+                { href: '/admin/salud', icon: 'health_and_safety', label: 'Salud pública', desc: 'Riesgo epidémico', color: '#EF4444' },
+                { href: '/api/admin/export', icon: 'download', label: 'Exportar CSV', desc: 'Base de datos completa', color: '#06B6D4' },
+              ].map(tool => (
+                <Link key={tool.href} href={tool.href}
+                  className="rounded-xl p-4 flex flex-col gap-2 transition-all hover:brightness-110 hover:scale-[1.02]"
+                  style={{ background: '#1e2d4a', border: `1px solid rgba(36,51,86,0.5)` }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: '24px', color: tool.color, fontVariationSettings: "'FILL' 1" }}>
+                    {tool.icon}
+                  </span>
+                  <div>
+                    <p className="text-sm font-semibold" style={{ color: '#F0F4FF' }}>{tool.label}</p>
+                    <p className="text-xs" style={{ color: '#64748B' }}>{tool.desc}</p>
                   </div>
-                ))}
-              </div>
-            )}
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* 6. Grid principal */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Últimos registros */}
+          <div className="rounded-lg flex flex-col"
+            style={{ background: '#1e2d4a', border: '1px solid rgba(36,51,86,0.5)' }}>
+            <div className="p-4 flex justify-between items-center"
+              style={{ borderBottom: '1px solid rgba(36,51,86,0.5)' }}>
+              <h2 className="font-semibold text-base" style={{ color: '#F0F4FF' }}>Últimos registros</h2>
+              <Link href="/victimas" className="text-sm transition-colors hover:text-white"
+                style={{ color: '#94A3B8' }}>Ver todos</Link>
+            </div>
+            <div className="p-2 flex flex-col gap-1 overflow-y-auto" style={{ maxHeight: '400px' }}>
+              {!recentVictims || recentVictims.length === 0 ? (
+                <p className="text-sm text-center py-8" style={{ color: '#64748B' }}>No hay registros aún</p>
+              ) : recentVictims.map(v => {
+                const initials = v.name ? v.name.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase() : '?'
+                const mins = Math.round((Date.now() - new Date(v.created_at).getTime()) / 60000)
+                const statusCfg: Record<string, { label: string; color: string; bg: string; border: string }> = {
+                  alive: { label: 'Con vida', color: '#22C55E', bg: 'rgba(34,197,94,0.15)', border: 'rgba(34,197,94,0.3)' },
+                  critical: { label: 'Crítico', color: '#DC2626', bg: 'rgba(220,38,38,0.15)', border: 'rgba(220,38,38,0.3)' },
+                  deceased: { label: 'Fallecido', color: '#94A3B8', bg: 'rgba(148,163,184,0.15)', border: 'rgba(148,163,184,0.3)' },
+                  missing: { label: 'Desaparecido', color: '#D4A017', bg: 'rgba(212,160,23,0.15)', border: 'rgba(212,160,23,0.3)' },
+                }
+                const cfg = statusCfg[v.status] ?? statusCfg.missing
+                return (
+                  <Link key={v.id} href={`/victima/${v.id}`}
+                    className="flex items-center justify-between p-3 rounded-md transition-colors"
+                    style={{ borderBottom: '1px solid rgba(36,51,86,0.5)' }}>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm shrink-0"
+                        style={{ background: 'rgba(36,51,86,0.5)', color: '#F0F4FF' }}>
+                        {initials}
+                      </div>
+                      <div>
+                        <div className="text-sm font-semibold" style={{ color: v.name ? '#F0F4FF' : '#64748B', fontStyle: v.name ? 'normal' : 'italic' }}>
+                          {v.name || 'Sin nombre registrado'}
+                        </div>
+                        <div className="text-xs flex items-center gap-2" style={{ color: '#94A3B8' }}>
+                          <span>Hace {mins < 60 ? `${mins} min` : `${Math.round(mins / 60)}h`}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {v.is_minor && (
+                        <span className="px-2.5 py-1 rounded-full text-xs font-semibold"
+                          style={{ background: 'rgba(168,85,247,0.15)', color: '#A855F7', border: '1px solid rgba(168,85,247,0.3)' }}>
+                          Menor
+                        </span>
+                      )}
+                      <span className="px-2.5 py-1 rounded-full text-xs font-semibold"
+                        style={{ background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.border}` }}>
+                        {cfg.label}
+                      </span>
+                    </div>
+                  </Link>
+                )
+              })}
+            </div>
           </div>
 
           {/* Hospitales y refugios */}
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-semibold text-gray-900">Hospitales y refugios activos</h2>
-              <Link href="/mapa-publico" className="text-sm text-red-600 hover:underline">Ver mapa</Link>
+          <div className="rounded-lg flex flex-col"
+            style={{ background: '#1e2d4a', border: '1px solid rgba(36,51,86,0.5)' }}>
+            <div className="p-4 flex justify-between items-center"
+              style={{ borderBottom: '1px solid rgba(36,51,86,0.5)' }}>
+              <h2 className="font-semibold text-base" style={{ color: '#F0F4FF' }}>Hospitales y refugios activos</h2>
+              <Link href="/mapa-publico" className="text-sm transition-colors hover:text-white"
+                style={{ color: '#94A3B8' }}>Ver mapa</Link>
             </div>
-            {locations.length === 0 ? (
-              <p className="text-sm text-gray-400 text-center py-8">Cargando ubicaciones…</p>
-            ) : (
-              <div className="space-y-3">
-                {locations.map(loc => (
-                  <div key={loc.id} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
-                    <div className="flex items-center gap-2">
-                      <span>{loc.type === 'hospital' ? '🏥' : '🏕️'}</span>
-                      <span className="text-sm text-gray-700 line-clamp-1">{loc.name}</span>
-                    </div>
-                    {loc.capacity && (
-                      <span className="text-xs text-gray-400">
-                        {loc.current_occupancy}/{loc.capacity}
+            <div className="p-4 flex flex-col gap-4 overflow-y-auto" style={{ maxHeight: '400px' }}>
+              {!locations || locations.length === 0 ? (
+                <p className="text-sm text-center py-8" style={{ color: '#64748B' }}>Sin ubicaciones activas</p>
+              ) : locations.map(loc => {
+                const pct = loc.capacity ? Math.round((loc.current_occupancy / loc.capacity) * 100) : null
+                const barColor = pct === null ? '#D4A017' : pct > 90 ? '#DC2626' : pct > 70 ? '#D4A017' : '#22C55E'
+                return (
+                  <div key={loc.id}>
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-sm flex items-center gap-2" style={{ color: '#F0F4FF' }}>
+                        <span className="material-symbols-outlined text-base" style={{ color: '#94A3B8' }}>
+                          {loc.type === 'hospital' ? 'local_hospital' : 'cottage'}
+                        </span>
+                        {loc.name}
                       </span>
+                      {pct !== null && (
+                        <span className="text-sm font-bold tabular-nums" style={{ color: barColor }}>{pct}%</span>
+                      )}
+                    </div>
+                    {pct !== null && (
+                      <div className="w-full h-1.5 rounded-full overflow-hidden" style={{ background: '#1a2744' }}>
+                        <div className="h-full rounded-full transition-all" style={{ width: `${Math.min(pct, 100)}%`, background: barColor }} />
+                      </div>
                     )}
                   </div>
-                ))}
-              </div>
-            )}
+                )
+              })}
+            </div>
           </div>
         </div>
       </main>
-    </div>
-  )
-}
-
-function StatCard({ label, value, color }: { label: string; value: number; color: string }) {
-  const colors: Record<string, string> = {
-    blue: 'bg-blue-50 text-blue-700 border-blue-100',
-    green: 'bg-green-50 text-green-700 border-green-100',
-    orange: 'bg-orange-50 text-orange-700 border-orange-100',
-    gray: 'bg-gray-50 text-gray-600 border-gray-100',
-  }
-  return (
-    <div className={`rounded-xl border p-4 ${colors[color]}`}>
-      <div className="text-3xl font-bold">{value}</div>
-      <div className="text-sm mt-0.5 opacity-80">{label}</div>
     </div>
   )
 }
