@@ -9,11 +9,42 @@ const STATUS_LABELS: Record<string, string> = {
   unknown:  'Sin identificar',
 }
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+// Escapa texto de la base de datos antes de interpolarlo en el HTML del email
+// (nombre/ubicación los escriben rescatistas; el correo no debe poder inyectar HTML).
+function escapeHtml(s: string): string {
+  return s.replace(/[&<>"']/g, c =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] as string))
+}
+
+// Anti-spam: máximo un email por víctima cada 5 minutos (memoria del proceso;
+// suficiente contra clics repetidos — el auth de staff de abajo es la barrera real).
+const lastSent = new Map<string, number>()
+const RATE_WINDOW_MS = 5 * 60 * 1000
+
 export async function POST(request: Request) {
   const { victim_id } = await request.json() as { victim_id: string }
-  if (!victim_id) return NextResponse.json({ error: 'victim_id requerido' }, { status: 400 })
+  if (!victim_id || !UUID_RE.test(victim_id)) {
+    return NextResponse.json({ error: 'victim_id requerido' }, { status: 400 })
+  }
 
   const supabase = await createClient()
+
+  // Solo staff verificado puede disparar notificaciones (mismo criterio que
+  // el editor de estado en /victimas/[id]) — RLS no basta como única barrera aquí.
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+  const { data: profile } = await supabase.from('profiles').select('role, is_verified').eq('id', user.id).single()
+  const canNotify = profile && (profile.role === 'admin'
+    || (profile.role === 'medical' && profile.is_verified)
+    || (profile.role === 'rescuer' && profile.is_verified))
+  if (!canNotify) return NextResponse.json({ error: 'No autorizado' }, { status: 403 })
+
+  const prev = lastSent.get(victim_id)
+  if (prev && Date.now() - prev < RATE_WINDOW_MS) {
+    return NextResponse.json({ sent: false, reason: 'notificación reciente — espera unos minutos' }, { status: 429 })
+  }
 
   const { data: victim } = await supabase
     .from('victims')
@@ -43,9 +74,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ sent: false, reason: 'RESEND_API_KEY no configurado' })
   }
 
-  const locationName = (victim as any).locations?.name ?? victim.found_location
-  const personName   = victim.name ?? 'La persona reportada'
-  const trackingUrl  = `${process.env.NEXT_PUBLIC_BASE_URL ?? 'https://rescatevz.com'}/seguimiento/${victim_id}`
+  const locationName  = escapeHtml((victim as any).locations?.name ?? victim.found_location ?? '')
+  const personName    = escapeHtml(victim.name ?? 'La persona reportada')
+  const reporterName  = victim.reporter_name ? escapeHtml(victim.reporter_name) : ''
+  const foundLocation = escapeHtml(victim.found_location ?? '')
+  const trackingUrl   = `${process.env.NEXT_PUBLIC_BASE_URL ?? 'https://rescatevz.com'}/seguimiento/${victim_id}`
 
   const html = `
 <!DOCTYPE html>
@@ -59,20 +92,20 @@ export async function POST(request: Request) {
     </div>
     <div style="padding:24px">
       <p style="margin:0 0 16px;color:#374151">
-        ${victim.reporter_name ? `Hola <strong>${victim.reporter_name}</strong>,` : 'Hola,'}
+        ${reporterName ? `Hola <strong>${reporterName}</strong>,` : 'Hola,'}
       </p>
       <p style="margin:0 0 20px;color:#374151">
-        El estado de <strong>${personName}</strong> (reportado/a en <em>${victim.found_location}</em>) ha sido actualizado:
+        El estado de <strong>${personName}</strong> (reportado/a en <em>${foundLocation}</em>) ha sido actualizado:
       </p>
       ${oldStatus ? `
       <div style="display:flex;align-items:center;gap:12px;margin:0 0 20px">
-        <span style="background:#F3F4F6;color:#6B7280;padding:6px 14px;border-radius:999px;font-size:14px;font-weight:600">${STATUS_LABELS[oldStatus] ?? oldStatus}</span>
+        <span style="background:#F3F4F6;color:#6B7280;padding:6px 14px;border-radius:999px;font-size:14px;font-weight:600">${STATUS_LABELS[oldStatus] ?? escapeHtml(oldStatus)}</span>
         <span style="color:#9CA3AF;font-size:18px">→</span>
-        <span style="background:#DCFCE7;color:#166534;padding:6px 14px;border-radius:999px;font-size:14px;font-weight:600">${STATUS_LABELS[newStatus] ?? newStatus}</span>
+        <span style="background:#DCFCE7;color:#166534;padding:6px 14px;border-radius:999px;font-size:14px;font-weight:600">${STATUS_LABELS[newStatus] ?? escapeHtml(newStatus)}</span>
       </div>` : `
       <div style="margin:0 0 20px">
         <span style="background:#DCFCE7;color:#166534;padding:8px 16px;border-radius:999px;font-size:14px;font-weight:600">
-          Estado actual: ${STATUS_LABELS[newStatus] ?? newStatus}
+          Estado actual: ${STATUS_LABELS[newStatus] ?? escapeHtml(newStatus)}
         </span>
       </div>`}
       ${locationName ? `<p style="color:#6B7280;font-size:14px;margin:0 0 20px">Ubicación actual registrada: <strong style="color:#374151">${locationName}</strong></p>` : ''}
@@ -98,7 +131,7 @@ export async function POST(request: Request) {
     body: JSON.stringify({
       from:    process.env.RESEND_FROM ?? 'RescateVZ <notificaciones@rescatevz.com>',
       to:      [victim.reporter_email],
-      subject: `Actualización: ${personName} — ${STATUS_LABELS[newStatus] ?? newStatus}`,
+      subject: `Actualización: ${victim.name ?? 'La persona reportada'} — ${STATUS_LABELS[newStatus] ?? newStatus}`,
       html,
     }),
   })
@@ -109,5 +142,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ sent: false, error: err }, { status: 502 })
   }
 
+  lastSent.set(victim_id, Date.now())
   return NextResponse.json({ sent: true })
 }
