@@ -20,17 +20,19 @@ interface ActualizarVictimaFormProps {
   locations: Location[]
   userId: string
   isRescuer?: boolean
+  hasReporterEmail?: boolean
 }
 
 const STATUS_OPTIONS: { value: VictimStatus; icon: string; color: string; bg: string; border: string }[] = [
-  { value: 'alive',    icon: 'check_circle', color: '#22C55E', bg: 'rgba(34,197,94,0.15)',   border: '#22C55E' },
-  { value: 'critical', icon: 'emergency',    color: '#F97316', bg: 'rgba(249,115,22,0.15)',  border: '#F97316' },
-  { value: 'deceased', icon: 'cancel',       color: '#64748B', bg: 'rgba(100,116,139,0.15)', border: '#64748B' },
-  { value: 'unknown',  icon: 'help',         color: '#D4A017', bg: 'rgba(212,160,23,0.15)',  border: '#D4A017' },
+  { value: 'alive',    icon: 'check_circle',  color: '#22C55E', bg: 'rgba(34,197,94,0.15)',   border: '#22C55E' },
+  { value: 'critical', icon: 'emergency',     color: '#F97316', bg: 'rgba(249,115,22,0.15)',  border: '#F97316' },
+  { value: 'missing',  icon: 'person_search', color: '#A855F7', bg: 'rgba(168,85,247,0.15)',  border: '#A855F7' },
+  { value: 'deceased', icon: 'cancel',        color: '#64748B', bg: 'rgba(100,116,139,0.15)', border: '#64748B' },
+  { value: 'unknown',  icon: 'help',          color: '#D4A017', bg: 'rgba(212,160,23,0.15)',  border: '#D4A017' },
 ]
 
 export default function ActualizarVictimaForm({
-  victimId, currentStatus, currentLocationId, currentNotes, locations, userId, isRescuer = false,
+  victimId, currentStatus, currentLocationId, currentNotes, locations, userId, isRescuer = false, hasReporterEmail = false,
 }: ActualizarVictimaFormProps) {
   const router = useRouter()
   const [status, setStatus] = useState<VictimStatus>(currentStatus)
@@ -70,6 +72,15 @@ export default function ActualizarVictimaForm({
       resource_id: victimId,
       metadata: { new_status: status, prev_status: currentStatus },
     })
+
+    // Aviso por email a quien reportó el caso (best-effort: el guardado ya está hecho)
+    if (status !== currentStatus && hasReporterEmail) {
+      fetch('/api/notificar-reportante', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ victim_id: victimId }),
+      }).catch(() => {})
+    }
 
     setSuccess(true)
     setLoading(false)

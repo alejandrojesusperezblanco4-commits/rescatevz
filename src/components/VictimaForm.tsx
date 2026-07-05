@@ -20,6 +20,9 @@ export default function VictimaForm({ locations, userId }: VictimaFormProps) {
   const [foundLocation, setFoundLocation] = useState('')
   const [currentLocationId, setCurrentLocationId] = useState('')
   const [notes, setNotes] = useState('')
+  const [reporterName, setReporterName] = useState('')
+  const [reporterEmail, setReporterEmail] = useState('')
+  const [reporterPhone, setReporterPhone] = useState('')
   const [photos, setPhotos] = useState<File[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -60,6 +63,9 @@ export default function VictimaForm({ locations, userId }: VictimaFormProps) {
         current_location_id: currentLocationId || null,
         photo_urls: photoPaths,
         notes: notes.trim() || null,
+        reporter_name: reporterName.trim() || null,
+        reporter_email: reporterEmail.trim() || null,
+        reporter_phone: reporterPhone.trim() || null,
       })
       .select('id')
       .single()
@@ -271,6 +277,44 @@ export default function VictimaForm({ locations, userId }: VictimaFormProps) {
           placeholder="Información adicional relevante para médicos o familia"
           className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
         />
+      </div>
+
+      {/* Datos de quien reporta — opcionales; con email recibe seguimiento automático */}
+      <div className="border border-gray-200 rounded-lg p-3 space-y-3">
+        <p className="text-sm font-medium text-gray-700">Quien reporta el caso <span className="font-normal text-gray-400">(opcional)</span></p>
+        <p className="text-xs text-gray-400 -mt-2">Si deja un correo, recibirá el enlace de seguimiento y un aviso automático con cada cambio de estado.</p>
+        <div>
+          <label className="block text-xs font-medium text-gray-500 mb-1">Nombre</label>
+          <input
+            type="text"
+            value={reporterName}
+            onChange={e => setReporterName(e.target.value)}
+            placeholder="Nombre de quien reporta"
+            className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+          />
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Correo</label>
+            <input
+              type="email"
+              value={reporterEmail}
+              onChange={e => setReporterEmail(e.target.value)}
+              placeholder="correo@ejemplo.com"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Teléfono</label>
+            <input
+              type="tel"
+              value={reporterPhone}
+              onChange={e => setReporterPhone(e.target.value)}
+              placeholder="+58 ..."
+              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+            />
+          </div>
+        </div>
       </div>
 
       {error && (

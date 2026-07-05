@@ -28,6 +28,7 @@ export default async function VictimaPage({ params }: { params: Promise<{ id: st
     .select(`
       id, name, physical_description, is_minor, status, estimated_age,
       found_location, notes, photo_urls, current_location_id, created_by,
+      reporter_name, reporter_email, reporter_phone,
       current_location:locations(id, name, type, address, phone)
     `)
     .eq('id', id)
@@ -154,7 +155,31 @@ export default async function VictimaPage({ params }: { params: Promise<{ id: st
               locations={locations}
               userId={user.id}
               isRescuer={profile.role === 'rescuer'}
+              hasReporterEmail={!!victim.reporter_email}
             />
+          )}
+
+          {/* Quien reportó el caso + enlace público de seguimiento */}
+          {isStaff && (victim.reporter_name || victim.reporter_email || victim.reporter_phone) && (
+            <div className="rounded-xl p-4 mt-4" style={{ background: '#162040', border: '1px solid rgba(36,51,86,0.5)' }}>
+              <p className="text-[10px] uppercase tracking-widest mb-2" style={{ color: '#64748B' }}>Quien reportó el caso</p>
+              <dl className="space-y-1.5 text-sm">
+                {victim.reporter_name && <dd style={{ color: '#d0d8f0' }}>{victim.reporter_name}</dd>}
+                {victim.reporter_email && (
+                  <dd><a href={`mailto:${victim.reporter_email}`} className="hover:underline" style={{ color: '#D4A017' }}>{victim.reporter_email}</a></dd>
+                )}
+                {victim.reporter_phone && (
+                  <dd><a href={`tel:${victim.reporter_phone}`} className="hover:underline" style={{ color: '#D4A017' }}>{victim.reporter_phone}</a></dd>
+                )}
+              </dl>
+              <p className="text-xs mt-3 pt-3" style={{ color: '#64748B', borderTop: '1px solid rgba(36,51,86,0.5)' }}>
+                Enlace público de seguimiento (sin datos personales):{' '}
+                <a href={`/seguimiento/${victim.id}`} target="_blank" rel="noopener noreferrer" className="hover:underline break-all" style={{ color: '#D4A017' }}>
+                  /seguimiento/{victim.id.slice(0, 8)}…
+                </a>
+                {victim.reporter_email && ' — recibe un email automático en cada cambio de estado.'}
+              </p>
+            </div>
           )}
 
           {/* Compartir card para redes sociales */}

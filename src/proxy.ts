@@ -28,7 +28,7 @@ export async function proxy(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   const { pathname } = request.nextUrl
 
-  const publicPaths = ['/', '/login', '/registro', '/buscar', '/mapa-publico', '/api/chat', '/api/public', '/api/pfif', '/api/og', '/primeros-auxilios', '/guia', '/noticias', '/donaciones', '/whatsapp', '/compartir', '/sismos', '/salud', '/api/sismos', '/api/cron', '/seguimiento', '/como-ayudar', '/api/alertas-sismos']
+  const publicPaths = ['/', '/login', '/registro', '/buscar', '/mapa-publico', '/api/chat', '/api/public', '/api/pfif', '/api/og', '/primeros-auxilios', '/guia', '/noticias', '/donaciones', '/whatsapp', '/compartir', '/sismos', '/salud', '/api/sismos', '/api/cron', '/seguimiento', '/como-ayudar']
   const isPublicPath = publicPaths.some(p => pathname === p || pathname.startsWith(p + '/'))
 
   if (!user && !isPublicPath) {

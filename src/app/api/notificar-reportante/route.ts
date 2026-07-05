@@ -78,7 +78,7 @@ export async function POST(request: Request) {
   const personName    = escapeHtml(victim.name ?? 'La persona reportada')
   const reporterName  = victim.reporter_name ? escapeHtml(victim.reporter_name) : ''
   const foundLocation = escapeHtml(victim.found_location ?? '')
-  const trackingUrl   = `${process.env.NEXT_PUBLIC_BASE_URL ?? 'https://rescatevz.com'}/seguimiento/${victim_id}`
+  const trackingUrl   = `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://rescatevz.com'}/seguimiento/${victim_id}`
 
   const html = `
 <!DOCTYPE html>
@@ -129,7 +129,7 @@ export async function POST(request: Request) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      from:    process.env.RESEND_FROM ?? 'RescateVZ <notificaciones@rescatevz.com>',
+      from:    process.env.RESEND_FROM_EMAIL ?? 'RescateVZ <notificaciones@rescatevz.com>',
       to:      [victim.reporter_email],
       subject: `Actualización: ${victim.name ?? 'La persona reportada'} — ${STATUS_LABELS[newStatus] ?? newStatus}`,
       html,
