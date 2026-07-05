@@ -770,10 +770,12 @@ CREATE TRIGGER victim_status_log_trigger
   AFTER UPDATE ON public.victims
   FOR EACH ROW EXECUTE FUNCTION public.log_victim_status_change();
 
-DROP POLICY IF EXISTS "victims: actualizar (staff verificado)" ON public.victims;
-CREATE POLICY "victims: actualizar (staff verificado)"
-  ON public.victims FOR UPDATE
-  USING (public.is_verified_staff());
+-- NOTA: se descartó una policy "victims: actualizar (staff verificado)" que
+-- permitía a CUALQUIER rescatista verificado editar CUALQUIER víctima — las
+-- policies RLS se combinan con OR y habría relajado el control existente
+-- ("victims: actualizar (rescuer propio)" limita a los casos que él registró;
+-- admin/medical ya pueden editar todo). El flujo de notificaciones funciona
+-- con las policies existentes.
 
 DROP TRIGGER IF EXISTS victims_sync_occupancy ON public.victims;
 CREATE TRIGGER victims_sync_occupancy
