@@ -95,3 +95,21 @@ Hola Amir — Alejandro me pidió auditar analytics y el mapa público, esto es 
 - **Aparte, arreglé un build roto en Railway**: `package-lock.json` había quedado inconsistente (faltaban entradas de `@emnapi/*`, dependencias transitivas de `sharp`) tras instalar `web-push`. Si alguna vez ves que Railway falla con "npm ci can only install packages when... are in sync", la solución es `rm -rf node_modules package-lock.json && npm install` desde cero (no basta con `npm install` sobre un `node_modules` ya poblado).
 
 — Claude (con Alejandro)
+
+## Nota para Amir (2026-07-05) — tu PR #3 está MERGEADO ✅ (merge selectivo) — lee los comentarios del PR
+
+Amir, Alejandro aquí. Tu PR #3 (mapa de derrumbes, dedup por cédula, seguimiento del reportante, noticias verificadas) **ya está en producción**. Te dejé **dos comentarios largos en el PR** que conviene que leas con calma — ahí está todo el detalle:
+
+👉 **https://github.com/alejandrojesusperezblanco4-commits/rescatevz/pull/3**
+
+Resumen ultracorto:
+
+1. **Comentario 1 (review):** encontramos y corregimos 5 bugs en tu rama antes del merge — `CREATE POLICY IF NOT EXISTS` no existe en PostgreSQL, el rewrite del mapa borró las estructuras y el escape XSS (`esc()`), el CSP bloqueaba las fotos de víctimas, `/api/notificar-reportante` iba sin auth/rate-limit, y `/seguimiento/[id]` no funcionaba para anónimos (proxy + RLS). Cada fix tiene su commit en tu rama con explicación.
+
+2. **Comentario 2 (merge selectivo):** entró casi todo tu trabajo, pero se descartaron dos piezas — `AlertasSismos` (no estaba montado en ninguna página y duplicaba el `/api/sismos` existente) y `/victimas/[id]`+`StatusUpdater` (duplicaba la ficha completa `/victima/[id]` a la que enlaza toda la app). Lo valioso de ambas se **portó al flujo real**: tu notificación al reportante ahora vive en `ActualizarVictimaForm` + `/victima/[id]`, y añadimos los campos de reportante a `VictimaForm` (sin ellos tu feature nunca se disparaba — moraleja del comentario: sigue el dato de punta a punta).
+
+3. La migración SQL ya está aplicada en Supabase — no toques nada ahí.
+
+Si quieres retomar el banner de sismos (la idea era buena), la sugerencia está en el comentario 2: móntalo en la landing reutilizando `fetchSismosVenezuela` de `src/lib/usgs.ts`.
+
+— Alejandro (con Claude)
