@@ -328,17 +328,18 @@ ON CONFLICT DO NOTHING;
 -- MIGRACIÓN: edificios derrumbados y estado desaparecido
 -- ============================================================
 
-ALTER TABLE public.locations
-  DROP CONSTRAINT IF EXISTS locations_type_check,
-  ADD CONSTRAINT locations_type_check
-    CHECK (type IN ('hospital', 'shelter', 'rescue_zone', 'collapsed_building'));
+-- (el CHECK de locations.type se redefine más abajo, en el bloque de ONGs,
+--  ya con 'collection_center' incluido — una sola definición final)
 
 ALTER TABLE public.victims
   DROP CONSTRAINT IF EXISTS victims_status_check,
   ADD CONSTRAINT victims_status_check
     CHECK (status IN ('alive', 'critical', 'deceased', 'missing', 'unknown'));
 
-CREATE POLICY IF NOT EXISTS "locations: rescatista registra derrumbe"
+-- Nota: PostgreSQL no soporta CREATE POLICY IF NOT EXISTS;
+-- el patrón re-ejecutable es DROP POLICY IF EXISTS + CREATE POLICY.
+DROP POLICY IF EXISTS "locations: rescatista registra derrumbe" ON public.locations;
+CREATE POLICY "locations: rescatista registra derrumbe"
   ON public.locations FOR INSERT
   WITH CHECK (
     public.is_verified_staff()
@@ -389,11 +390,13 @@ CREATE TABLE IF NOT EXISTS public.victim_status_log (
 
 ALTER TABLE public.victim_status_log ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY IF NOT EXISTS "status_log: insertar (staff)"
+DROP POLICY IF EXISTS "status_log: insertar (staff)" ON public.victim_status_log;
+CREATE POLICY "status_log: insertar (staff)"
   ON public.victim_status_log FOR INSERT
   WITH CHECK (public.current_user_role() IN ('admin', 'medical', 'rescuer'));
 
-CREATE POLICY IF NOT EXISTS "status_log: leer (público)"
+DROP POLICY IF EXISTS "status_log: leer (público)" ON public.victim_status_log;
+CREATE POLICY "status_log: leer (público)"
   ON public.victim_status_log FOR SELECT
   USING (TRUE);
 
@@ -767,7 +770,8 @@ CREATE TRIGGER victim_status_log_trigger
   AFTER UPDATE ON public.victims
   FOR EACH ROW EXECUTE FUNCTION public.log_victim_status_change();
 
-CREATE POLICY IF NOT EXISTS "victims: actualizar (staff verificado)"
+DROP POLICY IF EXISTS "victims: actualizar (staff verificado)" ON public.victims;
+CREATE POLICY "victims: actualizar (staff verificado)"
   ON public.victims FOR UPDATE
   USING (public.is_verified_staff());
 
@@ -799,3 +803,39 @@ ALTER TABLE public.news_posts
 -- El admin puede "Renovar" para sumar otras 48h. NULL = sin caducidad.
 ALTER TABLE public.news_posts
   ADD COLUMN IF NOT EXISTS expires_at TIMESTAMPTZ;
+
+-- ============================================================
+-- MIGRACIÓN: seguimiento público de caso (/seguimiento/[id])
+-- ============================================================
+
+-- El RLS de victims solo permite SELECT a staff/familiar aprobado, así que la
+-- página pública de seguimiento no puede consultar la tabla directamente (el
+-- reportante anónimo es justamente su destinatario). Mismo patrón que
+-- search_victims_public: SECURITY DEFINER con columnas fijas — el llamante
+-- jamás puede pedir nombre, cédula, fotos ni datos del reportante.
+CREATE OR REPLACE FUNCTION public.get_victim_tracking(p_victim_id UUID)
+RETURNS TABLE (
+  victim_status    TEXT,
+  found_location   TEXT,
+  location_name    TEXT,
+  location_address TEXT,
+  registered_at    TIMESTAMPTZ
+)
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT
+    v.status,
+    v.found_location,
+    l.name,
+    l.address,
+    v.created_at
+  FROM public.victims v
+  LEFT JOIN public.locations l ON l.id = v.current_location_id
+  WHERE v.id = p_victim_id;
+$$;
+
+REVOKE ALL ON FUNCTION public.get_victim_tracking(UUID) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.get_victim_tracking(UUID) TO anon, authenticated;
