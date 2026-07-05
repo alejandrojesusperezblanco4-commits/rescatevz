@@ -16,7 +16,7 @@ CREATE TABLE public.profiles (
   email       TEXT NOT NULL,
   full_name   TEXT NOT NULL DEFAULT '',
   role        TEXT NOT NULL DEFAULT 'family'
-                CHECK (role IN ('admin', 'rescuer', 'medical', 'family')),
+                CHECK (role IN ('admin', 'rescuer', 'medical', 'family', 'ngo')),
   cedula      TEXT,
   cedula_photo_url TEXT,
   selfie_url  TEXT,
@@ -28,13 +28,14 @@ CREATE TABLE public.profiles (
 CREATE TABLE public.locations (
   id                UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
   name              TEXT NOT NULL,
-  type              TEXT NOT NULL CHECK (type IN ('hospital', 'shelter', 'rescue_zone')),
+  type              TEXT NOT NULL CHECK (type IN ('hospital', 'shelter', 'rescue_zone', 'collapsed_building', 'collection_center')),
   lat               DECIMAL(10, 7) NOT NULL,
   lng               DECIMAL(10, 7) NOT NULL,
   address           TEXT,
   phone             TEXT,
   capacity          INTEGER,
   current_occupancy INTEGER NOT NULL DEFAULT 0,
+  needs             TEXT[] NOT NULL DEFAULT '{}', -- artículos que necesita el centro de acopio
   is_active         BOOLEAN NOT NULL DEFAULT TRUE,
   created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -44,11 +45,14 @@ CREATE TABLE public.victims (
   id                   UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
   created_by           UUID REFERENCES public.profiles(id) NOT NULL,
   name                 TEXT,                 -- puede ser NULL si se desconoce
+  cedula               TEXT,                 -- cédula venezolana (V/E + número); NULL si no se conoce o es menor sin cédula
+  partida_nacimiento   TEXT,                 -- número de partida de nacimiento; usado como dedup para menores sin cédula
+  tutor_cedula         TEXT,                 -- cédula del padre/madre/tutor; referencia auxiliar para menores
   physical_description TEXT NOT NULL,
   estimated_age        INTEGER,
   is_minor             BOOLEAN NOT NULL DEFAULT FALSE,
   status               TEXT NOT NULL DEFAULT 'unknown'
-                         CHECK (status IN ('alive', 'critical', 'deceased', 'unknown')),
+                         CHECK (status IN ('alive', 'critical', 'deceased', 'missing', 'unknown')),
   found_location       TEXT NOT NULL,
   current_location_id  UUID REFERENCES public.locations(id),
   photo_urls           TEXT[] NOT NULL DEFAULT '{}',
@@ -56,6 +60,11 @@ CREATE TABLE public.victims (
   created_at           TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at           TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- Impide cédulas duplicadas; permite múltiples registros sin cédula (NULL)
+CREATE UNIQUE INDEX victims_cedula_unique           ON public.victims (cedula)             WHERE cedula IS NOT NULL;
+-- Impide partidas de nacimiento duplicadas para menores sin cédula
+CREATE UNIQUE INDEX victims_partida_unique          ON public.victims (partida_nacimiento) WHERE partida_nacimiento IS NOT NULL;
 
 -- Solicitudes de familias para ver perfil completo de una víctima
 CREATE TABLE public.access_requests (
@@ -145,6 +154,29 @@ CREATE POLICY "locations: leer activas"
 CREATE POLICY "locations: escribir (admin)"
   ON public.locations FOR ALL
   USING (public.is_admin());
+
+CREATE POLICY "locations: rescatista registra derrumbe"
+  ON public.locations FOR INSERT
+  WITH CHECK (
+    public.is_verified_staff()
+    AND type = 'collapsed_building'
+  );
+
+CREATE OR REPLACE FUNCTION public.is_verified_ngo()
+RETURNS BOOLEAN AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.profiles
+    WHERE id = auth.uid() AND role = 'ngo' AND is_verified = TRUE
+  )
+$$ LANGUAGE sql SECURITY DEFINER STABLE;
+
+CREATE POLICY "locations: ngo registra centro de acopio"
+  ON public.locations FOR INSERT
+  WITH CHECK (public.is_verified_ngo() AND type = 'collection_center');
+
+CREATE POLICY "locations: ngo actualiza centro de acopio"
+  ON public.locations FOR UPDATE
+  USING (public.is_verified_ngo() AND type = 'collection_center');
 
 -- VICTIMS: staff verificado puede crear; staff puede leer adultos; medical/admin pueden ver menores
 CREATE POLICY "victims: crear (staff verificado)"
@@ -293,8 +325,94 @@ ON CONFLICT DO NOTHING;
 -- ============================================================
 
 -- ============================================================
+-- MIGRACIÓN: edificios derrumbados y estado desaparecido
+-- ============================================================
+
+-- (el CHECK de locations.type se redefine más abajo, en el bloque de ONGs,
+--  ya con 'collection_center' incluido — una sola definición final)
+
+ALTER TABLE public.victims
+  DROP CONSTRAINT IF EXISTS victims_status_check,
+  ADD CONSTRAINT victims_status_check
+    CHECK (status IN ('alive', 'critical', 'deceased', 'missing', 'unknown'));
+
+-- Nota: PostgreSQL no soporta CREATE POLICY IF NOT EXISTS;
+-- el patrón re-ejecutable es DROP POLICY IF EXISTS + CREATE POLICY.
+DROP POLICY IF EXISTS "locations: rescatista registra derrumbe" ON public.locations;
+CREATE POLICY "locations: rescatista registra derrumbe"
+  ON public.locations FOR INSERT
+  WITH CHECK (
+    public.is_verified_staff()
+    AND type = 'collapsed_building'
+  );
+
+-- Control de cédulas y partidas de nacimiento duplicadas
+ALTER TABLE public.victims ADD COLUMN IF NOT EXISTS cedula             TEXT;
+ALTER TABLE public.victims ADD COLUMN IF NOT EXISTS partida_nacimiento TEXT;
+ALTER TABLE public.victims ADD COLUMN IF NOT EXISTS tutor_cedula       TEXT;
+CREATE UNIQUE INDEX IF NOT EXISTS victims_cedula_unique  ON public.victims (cedula)             WHERE cedula IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS victims_partida_unique ON public.victims (partida_nacimiento) WHERE partida_nacimiento IS NOT NULL;
+
+-- ONGs y centros de acopio
+ALTER TABLE public.profiles
+  DROP CONSTRAINT IF EXISTS profiles_role_check,
+  ADD CONSTRAINT profiles_role_check
+    CHECK (role IN ('admin', 'rescuer', 'medical', 'family', 'ngo'));
+
+ALTER TABLE public.locations
+  DROP CONSTRAINT IF EXISTS locations_type_check,
+  ADD CONSTRAINT locations_type_check
+    CHECK (type IN ('hospital', 'shelter', 'rescue_zone', 'collapsed_building', 'collection_center'));
+
+ALTER TABLE public.locations ADD COLUMN IF NOT EXISTS needs TEXT[] NOT NULL DEFAULT '{}';
+
+-- ============================================================
+-- MIGRACIÓN: reportante + seguimiento de estado
+-- ============================================================
+
+ALTER TABLE public.victims ADD COLUMN IF NOT EXISTS reporter_name  TEXT;
+ALTER TABLE public.victims ADD COLUMN IF NOT EXISTS reporter_email TEXT;
+ALTER TABLE public.victims ADD COLUMN IF NOT EXISTS reporter_phone TEXT;
+
+ALTER TABLE public.locations ADD COLUMN IF NOT EXISTS reporter_email TEXT;
+ALTER TABLE public.locations ADD COLUMN IF NOT EXISTS reporter_phone TEXT;
+
+-- Log de cambios de estado (append-only)
+CREATE TABLE IF NOT EXISTS public.victim_status_log (
+  id         UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  victim_id  UUID NOT NULL REFERENCES public.victims(id) ON DELETE CASCADE,
+  old_status TEXT,
+  new_status TEXT NOT NULL,
+  changed_by UUID REFERENCES public.profiles(id),
+  notes      TEXT,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+ALTER TABLE public.victim_status_log ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "status_log: insertar (staff)" ON public.victim_status_log;
+CREATE POLICY "status_log: insertar (staff)"
+  ON public.victim_status_log FOR INSERT
+  WITH CHECK (public.current_user_role() IN ('admin', 'medical', 'rescuer'));
+
+DROP POLICY IF EXISTS "status_log: leer (público)" ON public.victim_status_log;
+CREATE POLICY "status_log: leer (público)"
+  ON public.victim_status_log FOR SELECT
+  USING (TRUE);
+
+CREATE OR REPLACE FUNCTION public.log_victim_status_change()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF OLD.status IS DISTINCT FROM NEW.status THEN
+    INSERT INTO public.victim_status_log (victim_id, old_status, new_status, changed_by)
+    VALUES (NEW.id, OLD.status, NEW.status, auth.uid());
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- ============================================================
 -- MIGRACIÓN: búsqueda pública sin exponer datos sensibles
--- Seguro de re-ejecutar sobre una base ya creada con el bloque anterior.
 -- ============================================================
 
 -- Búsqueda pública: solo confirma ubicación + estado de salud.
@@ -437,11 +555,11 @@ CREATE POLICY "victims: actualizar (rescuer propio)"
 -- Seguro de re-ejecutar sobre una base ya creada.
 -- ============================================================
 
--- Añadir 'engineer' al CHECK de roles (constraint con nombre autogenerado)
+-- Añadir 'engineer' al CHECK de roles
 ALTER TABLE public.profiles DROP CONSTRAINT IF EXISTS profiles_role_check;
 ALTER TABLE public.profiles
   ADD CONSTRAINT profiles_role_check
-  CHECK (role IN ('admin', 'rescuer', 'medical', 'family', 'engineer'));
+  CHECK (role IN ('admin', 'rescuer', 'medical', 'family', 'ngo', 'engineer'));
 
 CREATE TABLE IF NOT EXISTS public.structures (
   id               UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
@@ -647,14 +765,79 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+DROP TRIGGER IF EXISTS victim_status_log_trigger ON public.victims;
+CREATE TRIGGER victim_status_log_trigger
+  AFTER UPDATE ON public.victims
+  FOR EACH ROW EXECUTE FUNCTION public.log_victim_status_change();
+
+-- NOTA: se descartó una policy "victims: actualizar (staff verificado)" que
+-- permitía a CUALQUIER rescatista verificado editar CUALQUIER víctima — las
+-- policies RLS se combinan con OR y habría relajado el control existente
+-- ("victims: actualizar (rescuer propio)" limita a los casos que él registró;
+-- admin/medical ya pueden editar todo). El flujo de notificaciones funciona
+-- con las policies existentes.
+
 DROP TRIGGER IF EXISTS victims_sync_occupancy ON public.victims;
 CREATE TRIGGER victims_sync_occupancy
   AFTER INSERT OR UPDATE OR DELETE ON public.victims
   FOR EACH ROW EXECUTE FUNCTION public.trg_victims_sync_occupancy();
 
--- Backfill: recalcula la ocupación de todas las locations con los datos ya existentes
 UPDATE public.locations l
 SET current_occupancy = (
   SELECT COUNT(*) FROM public.victims v
   WHERE v.current_location_id = l.id AND v.status <> 'deceased'
 );
+
+-- ============================================================
+-- MIGRACIÓN: noticias con fuente verificada obligatoria y caducidad 48h
+-- ============================================================
+
+-- Nombre de la fuente (ej. "Efecto Cocuyo", "FUNVISIS"). NOT NULL con DEFAULT
+-- transitorio para no romper filas existentes; el formulario lo exige siempre.
+ALTER TABLE public.news_posts
+  ADD COLUMN IF NOT EXISTS source_name TEXT NOT NULL DEFAULT 'RescateVZ';
+
+-- URL a la nota original — ya existía como nullable; se mantiene así porque
+-- algunas fuentes (ej. comunicados orales de Cruz Roja) no tienen URL pública.
+-- El formulario lo pedirá siempre pero no bloqueará si no hay URL.
+
+-- Caducidad: cuando el admin publica, se fija en NOW() + 48h.
+-- El admin puede "Renovar" para sumar otras 48h. NULL = sin caducidad.
+ALTER TABLE public.news_posts
+  ADD COLUMN IF NOT EXISTS expires_at TIMESTAMPTZ;
+
+-- ============================================================
+-- MIGRACIÓN: seguimiento público de caso (/seguimiento/[id])
+-- ============================================================
+
+-- El RLS de victims solo permite SELECT a staff/familiar aprobado, así que la
+-- página pública de seguimiento no puede consultar la tabla directamente (el
+-- reportante anónimo es justamente su destinatario). Mismo patrón que
+-- search_victims_public: SECURITY DEFINER con columnas fijas — el llamante
+-- jamás puede pedir nombre, cédula, fotos ni datos del reportante.
+CREATE OR REPLACE FUNCTION public.get_victim_tracking(p_victim_id UUID)
+RETURNS TABLE (
+  victim_status    TEXT,
+  found_location   TEXT,
+  location_name    TEXT,
+  location_address TEXT,
+  registered_at    TIMESTAMPTZ
+)
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT
+    v.status,
+    v.found_location,
+    l.name,
+    l.address,
+    v.created_at
+  FROM public.victims v
+  LEFT JOIN public.locations l ON l.id = v.current_location_id
+  WHERE v.id = p_victim_id;
+$$;
+
+REVOKE ALL ON FUNCTION public.get_victim_tracking(UUID) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.get_victim_tracking(UUID) TO anon, authenticated;

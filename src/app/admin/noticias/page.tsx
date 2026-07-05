@@ -14,7 +14,7 @@ export default async function AdminNoticiasPage() {
 
   const { data: posts } = await supabase
     .from('news_posts')
-    .select('id, title, content, category, source_url, is_published, created_at')
+    .select('id, title, content, category, source_name, source_url, is_published, expires_at, created_at')
     .order('created_at', { ascending: false })
 
   return (

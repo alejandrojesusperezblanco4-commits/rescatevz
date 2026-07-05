@@ -1,8 +1,16 @@
-export type UserRole = 'admin' | 'rescuer' | 'medical' | 'family' | 'engineer'
+export type UserRole = 'admin' | 'rescuer' | 'medical' | 'family' | 'ngo' | 'engineer'
 
-export type VictimStatus = 'alive' | 'critical' | 'deceased' | 'unknown'
+export type VictimStatus = 'alive' | 'critical' | 'deceased' | 'missing' | 'unknown'
 
-export type LocationType = 'hospital' | 'shelter' | 'rescue_zone'
+export type LocationType = 'hospital' | 'shelter' | 'rescue_zone' | 'collapsed_building' | 'collection_center'
+
+export interface VictimStatusCounts {
+  alive: number
+  critical: number
+  deceased: number
+  missing: number
+  unknown: number
+}
 
 // Semáforo de habitabilidad de estructuras (evaluación post-terremoto):
 // pending = aún por analizar, green = habitable, yellow = uso restringido,
@@ -38,13 +46,18 @@ export interface Location {
   capacity: number | null
   current_occupancy: number
   is_active: boolean
+  needs?: string[]
   victim_count?: number
+  victim_counts?: VictimStatusCounts
 }
 
 export interface Victim {
   id: string
   created_by: string
   name: string | null
+  cedula: string | null
+  partida_nacimiento: string | null
+  tutor_cedula: string | null
   physical_description: string
   estimated_age: number | null
   is_minor: boolean
@@ -53,12 +66,25 @@ export interface Victim {
   current_location_id: string | null
   photo_urls: string[]
   notes: string | null
+  reporter_name: string | null
+  reporter_email: string | null
+  reporter_phone: string | null
   created_at: string
   updated_at: string
   current_location?: Location
 }
 
 export type IdDocumentType = 'cedula' | 'acta_nacimiento'
+
+export interface VictimStatusLog {
+  id: string
+  victim_id: string
+  old_status: VictimStatus | null
+  new_status: VictimStatus
+  changed_by: string | null
+  notes: string | null
+  created_at: string
+}
 
 export interface AccessRequest {
   id: string
@@ -119,6 +145,7 @@ export const STATUS_LABELS: Record<VictimStatus, string> = {
   alive: 'Con vida',
   critical: 'Estado crítico',
   deceased: 'Fallecido',
+  missing: 'Desaparecido',
   unknown: 'Desconocido',
 }
 
@@ -126,46 +153,63 @@ export const STATUS_COLORS: Record<VictimStatus, string> = {
   alive: 'bg-green-100 text-green-800',
   critical: 'bg-orange-100 text-orange-800',
   deceased: 'bg-gray-100 text-gray-800',
+  missing: 'bg-purple-100 text-purple-800',
   unknown: 'bg-yellow-100 text-yellow-800',
 }
 
+export const LOCATION_TYPE_LABELS: Record<LocationType, string> = {
+  hospital:           'Hospital',
+  shelter:            'Refugio',
+  rescue_zone:        'Zona de rescate',
+  collapsed_building: 'Edificio derrumbado',
+  collection_center:  'Centro de acopio / ONG',
+}
+
 export const ROLE_LABELS: Record<UserRole, string> = {
-  admin: 'Administrador',
+  admin:   'Administrador',
   rescuer: 'Rescatista',
   medical: 'Personal médico',
-  family: 'Familiar',
+  family:   'Familiar',
+  ngo:      'ONG / Centro de acopio',
   engineer: 'Ingeniero/Arquitecto',
+}
+
+export const ROLE_DESCRIPTIONS: Record<UserRole, string> = {
+  family:   'Busco a un familiar desaparecido. Podré solicitar acceso a registros tras verificar mi identidad.',
+  rescuer:  'Soy voluntario o rescatista activo en campo. Podré registrar víctimas tras aprobación de un administrador.',
+  medical:  'Soy médico, enfermero o personal de salud. Podré actualizar el estado médico de víctimas.',
+  ngo:      'Represento una ONG o centro de acopio. Publicaremos nuestra ubicación y qué artículos necesitamos.',
+  engineer: 'Soy ingeniero o arquitecto. Podré evaluar la habitabilidad de estructuras dañadas.',
+  admin:    'Administrador del sistema.',
 }
 
 export const HABITABILITY_LABELS: Record<HabitabilityStatus, string> = {
   pending: 'Por analizar',
-  green: 'Habitable',
-  yellow: 'Uso restringido',
-  red: 'No habitable',
+  green:   'Habitable',
+  yellow:  'Uso restringido',
+  red:     'No habitable',
 }
 
-// Píldoras para la lista interna (tema claro).
 export const HABITABILITY_COLORS: Record<HabitabilityStatus, string> = {
   pending: 'bg-gray-100 text-gray-700',
-  green: 'bg-green-100 text-green-800',
-  yellow: 'bg-yellow-100 text-yellow-800',
-  red: 'bg-red-100 text-red-800',
+  green:   'bg-green-100 text-green-800',
+  yellow:  'bg-yellow-100 text-yellow-800',
+  red:     'bg-red-100 text-red-800',
 }
 
-// Color sólido (hex) para los puntos del semáforo y las chinchetas del mapa.
 export const HABITABILITY_HEX: Record<HabitabilityStatus, string> = {
   pending: '#6B7280',
-  green: '#16A34A',
-  yellow: '#CA8A04',
-  red: '#DC2626',
+  green:   '#16A34A',
+  yellow:  '#CA8A04',
+  red:     '#DC2626',
 }
 
 export const STRUCTURE_TYPE_LABELS: Record<StructureType, string> = {
   residential: 'Residencial',
-  school: 'Escuela',
-  hospital: 'Centro de salud',
-  commercial: 'Comercial',
-  government: 'Gubernamental',
-  bridge: 'Puente / Vía',
-  other: 'Otro',
+  school:      'Escuela',
+  hospital:    'Centro de salud',
+  commercial:  'Comercial',
+  government:  'Gubernamental',
+  bridge:      'Puente / Vía',
+  other:       'Otro',
 }
