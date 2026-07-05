@@ -1,9 +1,10 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { Location, LocationType, VictimStatusCounts } from '@/lib/types'
+import type { Location, LocationType, Structure, VictimStatusCounts } from '@/lib/types'
+import { HABITABILITY_HEX, HABITABILITY_LABELS, STRUCTURE_TYPE_LABELS } from '@/lib/types'
 
-type FilterType = LocationType | 'all'
+type FilterType = LocationType | 'all' | 'structures'
 
 const FILTER_OPTIONS: { value: FilterType; label: string; emoji: string; color: string }[] = [
   { value: 'all',                label: 'Todos',       emoji: '📍', color: '#374151' },
@@ -11,7 +12,15 @@ const FILTER_OPTIONS: { value: FilterType; label: string; emoji: string; color: 
   { value: 'shelter',            label: 'Refugios',    emoji: '🏕️', color: '#2563EB' },
   { value: 'collapsed_building', label: 'Derrumbes',   emoji: '🏚️', color: '#D97706' },
   { value: 'collection_center',  label: 'Acopio/ONG',  emoji: '📦', color: '#16A34A' },
+  { value: 'structures',         label: 'Estructuras', emoji: '🏢', color: '#6B7280' },
 ]
+
+// Escapa texto introducido por el usuario antes de inyectarlo en el HTML
+// del popup de Leaflet (nombres/direcciones/needs los escriben rescatistas y ONGs).
+function esc(s: string): string {
+  return s.replace(/[&<>"']/g, c =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] as string))
+}
 
 interface MarkerConfig {
   color: string
@@ -54,7 +63,7 @@ function buildVictimSection(counts: VictimStatusCounts): string {
 function buildNeedsSection(needs: string[]): string {
   if (!needs || needs.length === 0) return ''
   const pills = needs.map(n =>
-    `<span style="display:inline-block;background:#DCFCE7;color:#166534;border-radius:999px;padding:2px 8px;font-size:11px;font-weight:500;margin:2px;">${n}</span>`
+    `<span style="display:inline-block;background:#DCFCE7;color:#166534;border-radius:999px;padding:2px 8px;font-size:11px;font-weight:500;margin:2px;">${esc(n)}</span>`
   ).join('')
   return `
     <div style="margin-top:8px;padding-top:8px;border-top:1px solid #E5E7EB;">
@@ -81,17 +90,36 @@ function buildPopupContent(loc: Location, cfg: MarkerConfig): string {
     : ''
 
   const phone = loc.phone
-    ? `<div style="font-size:12px;color:#2563EB;margin-top:4px;">📞 ${loc.phone}</div>`
+    ? `<div style="font-size:12px;color:#2563EB;margin-top:4px;">📞 ${esc(loc.phone)}</div>`
     : ''
 
   return `
     <div style="min-width:210px;font-family:system-ui,sans-serif;">
-      <div style="font-weight:600;color:#111827;font-size:14px;">${loc.name}</div>
+      <div style="font-weight:600;color:#111827;font-size:14px;">${esc(loc.name)}</div>
       <div style="font-size:11px;color:${cfg.color};margin-top:2px;text-transform:uppercase;letter-spacing:.05em;font-weight:600;">
         ${cfg.emoji} ${cfg.label}
       </div>
-      ${loc.address ? `<div style="font-size:12px;color:#374151;margin-top:6px;">${loc.address}</div>` : ''}
+      ${loc.address ? `<div style="font-size:12px;color:#374151;margin-top:6px;">${esc(loc.address)}</div>` : ''}
       ${occupancy}${needsSection}${victimSection}${phone}
+    </div>`
+}
+
+// Estructuras evaluadas (módulo de ingenieros): popup con el semáforo de habitabilidad.
+function buildStructurePopup(st: Structure): string {
+  const color = HABITABILITY_HEX[st.habitability]
+  const typeLabel = st.structure_type ? STRUCTURE_TYPE_LABELS[st.structure_type] : 'Estructura'
+  const notes = st.assessment_notes || st.report_notes
+
+  return `
+    <div style="min-width:210px;font-family:system-ui,sans-serif;">
+      <div style="font-weight:600;color:#111827;font-size:14px;">${esc(st.name)}</div>
+      <div style="font-size:11px;color:#6B7280;margin-top:2px;text-transform:uppercase;letter-spacing:.05em;">${typeLabel}</div>
+      <div style="display:flex;align-items:center;gap:6px;margin-top:6px;">
+        <span style="width:10px;height:10px;border-radius:9999px;background:${color};display:inline-block;"></span>
+        <span style="font-size:12px;font-weight:600;color:${color};">${HABITABILITY_LABELS[st.habitability]}</span>
+      </div>
+      ${st.address ? `<div style="font-size:12px;color:#374151;margin-top:6px;">${esc(st.address)}</div>` : ''}
+      ${notes ? `<div style="font-size:12px;color:#6B7280;margin-top:4px;">${esc(notes)}</div>` : ''}
     </div>`
 }
 
