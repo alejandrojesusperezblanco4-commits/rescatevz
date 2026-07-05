@@ -32,13 +32,25 @@ export default async function SeguimientoPage({ params }: { params: Promise<{ id
   const { id } = await params
   const supabase = await createClient()
 
-  const { data: victim } = await supabase
-    .from('victims')
-    .select('id, status, found_location, current_location_id, created_at, locations(name, type, address)')
-    .eq('id', id)
+  // El RLS de victims no permite lectura anónima (y el reportante sin cuenta es
+  // el destinatario de esta página) — se usa la función SECURITY DEFINER de
+  // columnas fijas get_victim_tracking, igual que hace /buscar con
+  // search_victims_public. Nunca consultar victims directamente desde una
+  // ruta pública.
+  const { data: tracking } = await supabase
+    .rpc('get_victim_tracking', { p_victim_id: id })
     .single()
 
-  if (!victim) notFound()
+  if (!tracking) notFound()
+
+  const victim = {
+    status:         (tracking as any).victim_status as string,
+    found_location: (tracking as any).found_location as string,
+    created_at:     (tracking as any).registered_at as string,
+  }
+  const location = (tracking as any).location_name
+    ? { name: (tracking as any).location_name as string, address: (tracking as any).location_address as string | null }
+    : null
 
   const { data: log } = await supabase
     .from('victim_status_log')
@@ -46,8 +58,7 @@ export default async function SeguimientoPage({ params }: { params: Promise<{ id
     .eq('victim_id', id)
     .order('created_at', { ascending: false })
 
-  const location = (victim as any).locations
-  const createdAt = new Date(victim.created_at as string)
+  const createdAt = new Date(victim.created_at)
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
