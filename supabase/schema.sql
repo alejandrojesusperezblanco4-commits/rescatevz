@@ -410,3 +410,29 @@ CREATE POLICY "minor_inquiries: insertar"
     AND id_document_url IS NOT NULL
     AND length(id_document_url) > 0
   );
+
+-- ============================================================
+-- MIGRACIÓN: importador de sitios de Venezuela Reporta
+-- El endpoint POST /api/sync/sitios trae hospitales, clínicas, centros
+-- de acopio y refugios desde la API abierta de Venezuela Reporta y los
+-- inserta en public.locations. Muchos sitios llegan SIN coordenadas
+-- (lat/lng nulos), así que lat y lng dejan de ser obligatorios; el mapa
+-- público filtra los que no tienen coordenadas.
+-- Seguro de re-ejecutar sobre una base ya creada.
+-- ============================================================
+
+ALTER TABLE public.locations ALTER COLUMN lat DROP NOT NULL;
+ALTER TABLE public.locations ALTER COLUMN lng DROP NOT NULL;
+
+-- Origen del sitio: 'manual' (creado en la app) o 'venezuela_reporta'
+-- (importado). Permite distinguir y, si hace falta, re-sincronizar solo
+-- los importados sin tocar los cargados a mano.
+ALTER TABLE public.locations
+  ADD COLUMN IF NOT EXISTS source TEXT NOT NULL DEFAULT 'manual'
+    CHECK (source IN ('manual', 'venezuela_reporta'));
+
+-- Evita duplicados por nombre+tipo (el importador ya deduplica en la
+-- app, pero esto lo garantiza a nivel de base ante ejecuciones
+-- concurrentes). Se normaliza a minúsculas para no depender del casing.
+CREATE UNIQUE INDEX IF NOT EXISTS locations_name_type_uniq
+  ON public.locations (lower(name), type);

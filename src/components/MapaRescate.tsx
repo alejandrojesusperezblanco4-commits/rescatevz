@@ -36,6 +36,9 @@ export default function MapaRescate({ locations }: MapaRescateProps) {
       }).addTo(map)
 
       locations.forEach(loc => {
+        // Sitios importados sin coordenadas no se pintan en el mapa.
+        if (loc.lat == null || loc.lng == null) return
+
         const isHospital = loc.type === 'hospital'
         const color = isHospital ? '#DC2626' : '#2563EB'
         const icon = L.divIcon({
