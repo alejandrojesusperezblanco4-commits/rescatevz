@@ -39,8 +39,8 @@ export interface Location {
   id: string
   name: string
   type: LocationType
-  lat: number
-  lng: number
+  lat: number | null
+  lng: number | null
   address: string | null
   phone: string | null
   capacity: number | null

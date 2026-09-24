@@ -57,6 +57,7 @@ export async function POST(request: NextRequest) {
         current_occupancy: 0,
         is_active: true,
         phone: null,
+        source: 'venezuela_reporta',
       }))
 
     let inserted = 0
@@ -70,9 +71,10 @@ export async function POST(request: NextRequest) {
     }
 
     await admin.from('audit_log').insert({
-      action: 'import_locations_vr',
-      actor_id: user.id,
-      details: { total_vr: filtrados.length, inserted, skipped: filtrados.length - inserted },
+      user_id: user.id,
+      action: 'IMPORT_LOCATIONS_VR',
+      resource_type: 'location',
+      metadata: { total_vr: filtrados.length, inserted, skipped: filtrados.length - inserted },
     })
 
     const { count: totalDB } = await admin

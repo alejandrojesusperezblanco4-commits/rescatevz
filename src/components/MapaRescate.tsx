@@ -146,6 +146,8 @@ export default function MapaRescate({ locations }: { locations: Location[] }) {
     markersRef.current = []
 
     locRef.current
+      // Sitios importados sin coordenadas no se pintan en el mapa.
+      .filter(loc => loc.lat != null && loc.lng != null)
       .filter(loc => filterRef.current === 'all' || loc.type === filterRef.current)
       .forEach(loc => {
         const cfg      = getMarkerConfig(loc.type)
